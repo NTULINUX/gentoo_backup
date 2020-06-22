@@ -1,0 +1,75 @@
+# Use for last stage only
+app-shells/bash mem-scramble
+sys-boot/grub -grub_platforms_efi-64 -themes -truetype -fonts
+sys-fs/cryptsetup -gcrypt -libressl nettle
+app-admin/sysklogd logrotate
+app-admin/logrotate -cron
+sys-apps/kmod libressl lzma
+sys-process/procps ncurses
+app-editors/nano -magic -spell
+net-misc/curl curl_ssl_libressl -curl_ssl_openssl
+dev-libs/glib dbus
+x11-libs/libdrm libkms video_cards_radeon
+x11-base/xorg-server glamor udev xvfb
+x11-drivers/xf86-video-amdgpu glamor udev
+media-gfx/inkscape imagemagick jpeg
+media-gfx/gimp exif jpeg png postscript svg tiff
+net-p2p/deluge gtk
+net-p2p/transmission qt5
+x11-apps/mesa-progs egl gles2
+media-libs/mesa -classic
+media-video/ffmpeg vorbis -network
+media-sound/audacity ffmpeg id3tag sbsms
+media-sound/alsa-utils ncurses
+www-client/firefox hwaccel -screenshot -system-libvpx
+mail-client/thunderbird -gstreamer
+media-video/vlc alsa flac mpeg ogg vorbis qt5 -dvbpsi
+media-libs/phonon -vlc
+media-gfx/imagemagick corefonts jpeg png svg tiff
+virtual/imagemagick-tools jpeg png svg tiff
+media-gfx/krita tiff
+app-text/ghostscript-gpl gtk tiff
+net-print/gutenprint gtk ppds
+app-text/qpdfview postscript
+app-forensics/chkrootkit -cron
+sys-block/gparted fat ntfs
+sys-libs/libomp offload ompt
+dev-lang/python ncurses
+dev-libs/boost python
+net-libs/nodejs bundled-ssl
+net-libs/libtorrent-rasterbar python -dht
+net-vpn/openvpn -lzo
+net-analyzer/wireshark -randpkt -randpktdump -sharkd -tshark
+app-arch/p7zip rar
+dev-lang/python sqlite
+dev-python/twisted -soap
+x11-libs/gdk-pixbuf jpeg
+sys-apps/smartmontools -daemon
+x11-libs/libwnck tools
+x11-misc/lightdm gtk
+x11-misc/lightdm-gtk-greeter branding
+media-libs/libpng apng
+gnome-base/gnome-keyring -ssh-agent
+app-crypt/gcr gtk
+app-crypt/pinentry gnome-keyring gtk
+sys-libs/zlib minizip
+x11-libs/libxcb xkb
+app-text/poppler cairo qt5
+media-libs/gegl cairo
+app-office/libreoffice gtk mariadb pdfimport
+app-text/xmlto text
+dev-qt/qtcore icu
+dev-qt/qtgui jpeg -libinput
+dev-libs/libxml2 python
+dev-qt/qtsql sqlite
+kde-apps/kate -addons
+dev-libs/libpeas gtk
+x11-libs/gtk+:3 introspection
+dev-libs/atk introspection
+dev-libs/libnl -debug
+x11-libs/gdk-pixbuf introspection
+x11-libs/pango introspection
+net-irc/hexchat gtk
+media-libs/harfbuzz icu
+media-gfx/exiv2 xmp
+media-gfx/blender colorio cycles ffmpeg llvm openimageio player tiff
