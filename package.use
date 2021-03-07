@@ -1,75 +1,72 @@
 # Use for last stage only
 app-shells/bash mem-scramble
-sys-boot/grub -grub_platforms_efi-64 -themes -truetype -fonts
+sys-boot/grub -themes -truetype -fonts
+sys-apps/hwids udev
+sys-apps/util-linux ncurses python
+sys-apps/openrc ncurses
+dev-libs/gmp cxx
 sys-fs/cryptsetup -gcrypt -libressl nettle
 app-admin/sysklogd logrotate
-app-admin/logrotate -cron
-sys-apps/kmod libressl lzma
-sys-process/procps ncurses
-app-editors/nano -magic -spell
-net-misc/curl curl_ssl_libressl -curl_ssl_openssl
-dev-libs/glib dbus
-x11-libs/libdrm libkms video_cards_radeon
-x11-base/xorg-server glamor udev xvfb
-x11-drivers/xf86-video-amdgpu glamor udev
-media-gfx/inkscape imagemagick jpeg
+sys-apps/kmod libressl lzma pkcs7
+app-arch/tar minimal
+app-editors/nano -magic -spell minimal
+x11-libs/libdrm -libkms video_cards_radeon
+x11-base/xorg-server udev xvfb
+media-gfx/inkscape jpeg
 media-gfx/gimp exif jpeg png postscript svg tiff
+net-misc/curl http2
+net-libs/nodejs -npm -snapshot -system-ssl
 net-p2p/deluge gtk
-net-p2p/transmission qt5
-x11-apps/mesa-progs egl gles2
-media-libs/mesa -classic
-media-video/ffmpeg vorbis -network
-media-sound/audacity ffmpeg id3tag sbsms
+media-libs/mesa -classic X video_cards_radeonsi
+media-video/ffmpeg -network webp
+media-sound/audacity alsa ffmpeg id3tag sbsms
 media-sound/alsa-utils ncurses
-www-client/firefox hwaccel -screenshot -system-libvpx
-mail-client/thunderbird -gstreamer
-media-video/vlc alsa flac mpeg ogg vorbis qt5 -dvbpsi
+dev-libs/libpcre2 pcre16
+media-video/vlc -dvbpsi alsa dav1d flac mpeg qt5 vpx X
 media-libs/phonon -vlc
-media-gfx/imagemagick corefonts jpeg png svg tiff
-virtual/imagemagick-tools jpeg png svg tiff
-media-gfx/krita tiff
-app-text/ghostscript-gpl gtk tiff
-net-print/gutenprint gtk ppds
+media-libs/libvpx postproc
+media-gfx/imagemagick corefonts jpeg png svg
+virtual/imagemagick-tools jpeg png svg
 app-text/qpdfview postscript
-app-forensics/chkrootkit -cron
+app-text/ghostscript-gpl gtk
+app-text/xmlto text
+net-print/gutenprint gtk ppds
 sys-block/gparted fat ntfs
 sys-libs/libomp offload ompt
 dev-lang/python ncurses
 dev-libs/boost python
-net-libs/nodejs bundled-ssl
-net-libs/libtorrent-rasterbar python -dht
-net-vpn/openvpn -lzo
-net-analyzer/wireshark -randpkt -randpktdump -sharkd -tshark
+net-libs/nodejs bundled-ssl icu
+net-libs/libtorrent-rasterbar -dht python
+net-vpn/openvpn -lzo inotify
+net-analyzer/wireshark -dftest -netlink -opus -randpkt -randpktdump -plugins -sharkd -tshark -udpdump qt5
 app-arch/p7zip rar
 dev-lang/python sqlite
 dev-python/twisted -soap
-x11-libs/gdk-pixbuf jpeg
-sys-apps/smartmontools -daemon
-x11-libs/libwnck tools
 x11-misc/lightdm gtk
 x11-misc/lightdm-gtk-greeter branding
 media-libs/libpng apng
 gnome-base/gnome-keyring -ssh-agent
-app-crypt/gcr gtk
 app-crypt/pinentry gnome-keyring gtk
-sys-libs/zlib minizip
+app-crypt/gcr gtk
+sys-libs/zlib minizip static-libs
 x11-libs/libxcb xkb
-app-text/poppler cairo qt5
+app-text/poppler cairo cxx qt5
 media-libs/gegl cairo
 app-office/libreoffice gtk mariadb pdfimport
-app-text/xmlto text
+dev-qt/qtgui -gif libinput udev
 dev-qt/qtcore icu
-dev-qt/qtgui jpeg -libinput
 dev-libs/libxml2 python
-dev-qt/qtsql sqlite
-kde-apps/kate -addons
 dev-libs/libpeas gtk
-x11-libs/gtk+:3 introspection
-dev-libs/atk introspection
-dev-libs/libnl -debug
-x11-libs/gdk-pixbuf introspection
-x11-libs/pango introspection
+dev-libs/libdbusmenu gtk3
 net-irc/hexchat gtk
-media-libs/harfbuzz icu
-media-gfx/exiv2 xmp
-media-gfx/blender colorio cycles ffmpeg llvm openimageio player tiff
+lxqt-base/lxqt-panel -alsa -volume cpuload
+lxqt-base/lxqt-meta processviewer terminal
+net-vpn/networkmanager-openvpn gtk
+gnome-extra/nm-applet appindicator
+app-crypt/gpgme cxx
+media-libs/harfbuzz graphite icu
+media-gfx/fontforge -X
+www-client/links -X
+app-office/libreoffice dbus
+media-libs/portaudio alsa
+media-libs/flac cxx

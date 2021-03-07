@@ -1,0 +1,27 @@
+# Never install
+*/*systemd*
+*/*pulseaudio*
+*/*-bin
+net-misc/openssh
+sys-auth/polkit
+gnome-base/gvfs
+sys-fs/udisks
+# Use LibreSSL instead
+dev-libs/openssl
+
+# Keep synced with running LTS kernel
+>=sys-kernel/linux-headers-5.5
+
+# Mask GCC 10 due to -fno-common bugs
+sys-devel/gcc:10
+
+# Mask some unstable keywords
+=*/*-*_alpha*
+=*/*-*_beta*
+=*/*-*_pre*
+=*/*-*_rc*
+=*/*-*9999*
+
+# Temporarily mask Python >3.9
+dev-lang/python:3.9
+dev-lang/python:3.10
