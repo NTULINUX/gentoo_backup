@@ -1,6 +1,8 @@
-# Mask unstable releases of Mozilla packages to avoid constant updates
-www-client/firefox -~amd64
-mail-client/thunderbird -~amd64
+# Allow a bleeding edge toolchain except for GCC
+>=sys-libs/glibc-2.33 **
+>=sys-devel/binutils-2.36.1 **
+>=sys-libs/binutils-libs-2.36.1 **
 
-# Same for Libreoffice
+# Mask unstable releases of certain packages to avoid constant updates
+www-client/firefox -~amd64
 app-office/libreoffice -~amd64

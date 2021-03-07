@@ -1,13 +1,13 @@
 # Use for last stage only
-app-shells/bash mem-scramble
+app-shells/bash -net mem-scramble
 sys-boot/grub -themes -truetype -fonts
 sys-apps/hwids udev
 sys-apps/util-linux ncurses python
 sys-apps/openrc ncurses
 dev-libs/gmp cxx
-sys-fs/cryptsetup -gcrypt -libressl nettle
+sys-fs/cryptsetup -gcrypt -openssl nettle
 app-admin/sysklogd logrotate
-sys-apps/kmod libressl lzma pkcs7
+sys-apps/kmod lzma pkcs7
 app-arch/tar minimal
 app-editors/nano -magic -spell minimal
 x11-libs/libdrm -libkms video_cards_radeon
@@ -15,8 +15,7 @@ x11-base/xorg-server udev xvfb
 media-gfx/inkscape jpeg
 media-gfx/gimp exif jpeg png postscript svg tiff
 net-misc/curl http2
-net-libs/nodejs -npm -snapshot -system-ssl
-net-p2p/deluge gtk
+net-libs/nodejs -npm -snapshot -system-ssl bundled-ssl icu
 media-libs/mesa -classic X video_cards_radeonsi
 media-video/ffmpeg -network webp
 media-sound/audacity alsa ffmpeg id3tag sbsms
@@ -32,16 +31,17 @@ app-text/ghostscript-gpl gtk
 app-text/xmlto text
 net-print/gutenprint gtk ppds
 sys-block/gparted fat ntfs
+sys-libs/compiler-rt-sanitizers -asan -cfi -dfsan -gwp-asan -hwasan -libfuzzer -msan -safestack -scudo -tsan -ubsan -xray
 sys-libs/libomp offload ompt
-dev-lang/python ncurses
+dev-lang/perl minimal
+dev-lang/python ncurses sqlite verify-sig
 dev-libs/boost python
-net-libs/nodejs bundled-ssl icu
 net-libs/libtorrent-rasterbar -dht python
+dev-python/twisted -soap
+net-p2p/deluge gtk
 net-vpn/openvpn -lzo inotify
 net-analyzer/wireshark -dftest -netlink -opus -randpkt -randpktdump -plugins -sharkd -tshark -udpdump qt5
 app-arch/p7zip rar
-dev-lang/python sqlite
-dev-python/twisted -soap
 x11-misc/lightdm gtk
 x11-misc/lightdm-gtk-greeter branding
 media-libs/libpng apng
@@ -52,7 +52,7 @@ sys-libs/zlib minizip static-libs
 x11-libs/libxcb xkb
 app-text/poppler cairo cxx qt5
 media-libs/gegl cairo
-app-office/libreoffice gtk mariadb pdfimport
+app-office/libreoffice dbus gtk mariadb pdfimport
 dev-qt/qtgui -gif libinput udev
 dev-qt/qtcore icu
 dev-libs/libxml2 python
@@ -67,6 +67,5 @@ app-crypt/gpgme cxx
 media-libs/harfbuzz graphite icu
 media-gfx/fontforge -X
 www-client/links -X
-app-office/libreoffice dbus
 media-libs/portaudio alsa
 media-libs/flac cxx

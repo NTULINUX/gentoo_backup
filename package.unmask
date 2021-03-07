@@ -1,3 +1,4 @@
 # Exceptions here
 =dev-libs/libdbusmenu-qt-*pre*
 =dev-perl/Mozilla-CA-*9999*
+=virtual/perl-Data-Dumper-*rc*
