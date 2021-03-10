@@ -30,11 +30,12 @@ app-text/qpdfview postscript
 app-text/ghostscript-gpl gtk
 app-text/xmlto text
 net-print/gutenprint gtk ppds
+sys-auth/polkit elogind
 sys-block/gparted fat ntfs
 sys-libs/compiler-rt-sanitizers -asan -cfi -dfsan -gwp-asan -hwasan -libfuzzer -msan -safestack -scudo -tsan -ubsan -xray
 sys-libs/libomp offload ompt
 dev-lang/perl minimal
-dev-lang/python ncurses sqlite verify-sig
+dev-lang/python ncurses sqlite
 dev-libs/boost python
 net-libs/libtorrent-rasterbar -dht python
 dev-python/twisted -soap
@@ -53,8 +54,9 @@ x11-libs/libxcb xkb
 app-text/poppler cairo cxx qt5
 media-libs/gegl cairo
 app-office/libreoffice dbus gtk mariadb pdfimport
-dev-qt/qtgui -gif libinput udev
+dev-qt/qtgui -gif gif jpeg libinput udev
 dev-qt/qtcore icu
+dev-qt/qtsql sqlite
 dev-libs/libxml2 python
 dev-libs/libpeas gtk
 dev-libs/libdbusmenu gtk3
