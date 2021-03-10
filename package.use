@@ -71,3 +71,6 @@ media-gfx/fontforge -X
 www-client/links -X
 media-libs/portaudio alsa
 media-libs/flac cxx
+
+# Firefox is broken right now with PGO+Clang/LLVM-11.1
+www-client/firefox -pgo
