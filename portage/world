@@ -18,6 +18,7 @@ media-video/mpv
 media-video/vlc
 net-analyzer/tcpdump
 net-analyzer/wireshark
+net-firewall/nftables
 net-irc/hexchat
 net-misc/openntpd
 net-vpn/networkmanager-openvpn
