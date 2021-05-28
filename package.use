@@ -4,24 +4,31 @@ sys-boot/grub -themes -truetype -fonts
 sys-apps/hwids udev
 sys-apps/util-linux ncurses python
 sys-apps/openrc ncurses
+sys-auth/polkit elogind
+sys-auth/pambase elogind
+sys-apps/smartmontools -caps
 dev-libs/gmp cxx
 sys-fs/cryptsetup -gcrypt -openssl nettle
-app-admin/sysklogd logrotate
 sys-apps/kmod lzma pkcs7
 app-arch/tar minimal
+app-arch/libarchive lzo lz4 zstd
 app-editors/nano -magic -spell minimal
 x11-libs/libdrm -libkms video_cards_radeon
 x11-base/xorg-server udev xvfb
 media-gfx/inkscape jpeg
 media-gfx/gimp exif jpeg png postscript svg tiff
 net-misc/curl http2
-net-libs/nodejs -npm -snapshot -system-ssl bundled-ssl icu
-media-libs/mesa -classic X video_cards_radeonsi
+net-misc/networkmanager -elogind ncurses
+net-libs/nodejs -npm -snapshot icu
+media-libs/mesa X video_cards_radeonsi
 media-video/ffmpeg -network webp
-media-sound/audacity alsa ffmpeg id3tag sbsms
+media-sound/audacity ffmpeg id3tag sbsms
 media-sound/alsa-utils ncurses
+media-sound/jack2 -opus alsa dbus
+media-sound/jack_capture -mp3
+media-sound/cadence -opengl
 dev-libs/libpcre2 pcre16
-media-video/vlc -dvbpsi alsa dav1d flac mpeg qt5 vpx X
+media-video/vlc -dvbpsi dav1d mpeg qt5 vpx X
 media-libs/phonon -vlc
 media-libs/libvpx postproc
 media-gfx/imagemagick corefonts jpeg png svg
@@ -30,12 +37,11 @@ app-text/qpdfview postscript
 app-text/ghostscript-gpl gtk
 app-text/xmlto text
 net-print/gutenprint gtk ppds
-sys-auth/polkit elogind
 sys-block/gparted fat ntfs
-sys-libs/compiler-rt-sanitizers -asan -cfi -dfsan -gwp-asan -hwasan -libfuzzer -msan -safestack -scudo -tsan -ubsan -xray
-sys-libs/libomp offload ompt
+sys-libs/libomp offload
 dev-lang/perl minimal
 dev-lang/python ncurses sqlite
+dev-lang/rust nightly parallel-compiler
 dev-libs/boost python
 net-libs/libtorrent-rasterbar -dht python
 dev-python/twisted -soap
@@ -61,16 +67,14 @@ dev-libs/libxml2 python
 dev-libs/libpeas gtk
 dev-libs/libdbusmenu gtk3
 net-irc/hexchat gtk
-lxqt-base/lxqt-panel -alsa -volume cpuload
-lxqt-base/lxqt-meta processviewer terminal
+lxqt-base/lxqt-panel -volume tray
+lxqt-base/lxqt-meta terminal
 net-vpn/networkmanager-openvpn gtk
 gnome-extra/nm-applet appindicator
 app-crypt/gpgme cxx
 media-libs/harfbuzz graphite icu
 media-gfx/fontforge -X
 www-client/links -X
-media-libs/portaudio alsa
 media-libs/flac cxx
-
-# Firefox is broken right now with PGO+Clang/LLVM-11.1
-www-client/firefox -pgo
+media-libs/opus custom-modes
+dev-python/PyQt5 -opengl dbus gui svg widgets

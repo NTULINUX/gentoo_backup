@@ -1,10 +1,8 @@
-# Simple stateful nftables firewall for workstation
 table ip filter {
 	chain incoming {
 		type filter hook input priority filter; policy drop;
 		iif "lo" ip daddr 127.0.0.1 ip saddr 127.0.0.1 accept
-		iifname "enp24s0" ip protocol tcp ip daddr 192.168.0.0/24 ct state established,related accept
-		iifname "enp24s0" ip protocol udp ip daddr 192.168.0.0/24 ct state established,related accept
+		ct state established,related accept
 	}
 
 	chain forwarding {
@@ -12,9 +10,6 @@ table ip filter {
 	}
 
 	chain outgoing {
-		type filter hook output priority filter; policy drop;
-		ip saddr 127.0.0.1 ip daddr 127.0.0.1 accept
-		ip protocol tcp ip saddr 192.168.0.0/24 ct state established,related,new accept
-		ip protocol udp ip saddr 192.168.0.0/24 ct state established,related,new accept
+		type filter hook output priority filter; policy accept;
 	}
 }

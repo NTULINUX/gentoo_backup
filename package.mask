@@ -8,8 +8,8 @@ gnome-base/gvfs
 # Keep synced with running LTS kernel
 >=sys-kernel/linux-headers-5.11
 
-# Mask GCC 10 due to -fno-common bugs
-sys-devel/gcc:10
+# Mask GCC 11 for now (Only install GCC .3 releases or greater)
+>=sys-devel/gcc-11
 
 # Mask some unstable keywords
 =*/*-*_alpha*
@@ -18,6 +18,5 @@ sys-devel/gcc:10
 =*/*-*_rc*
 =*/*-*9999*
 
-# Temporarily mask Python >3.9
-dev-lang/python:3.9
+# Temporarily mask Python 3.10
 dev-lang/python:3.10
