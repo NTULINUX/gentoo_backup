@@ -12,24 +12,23 @@ sys-fs/cryptsetup -gcrypt -openssl nettle
 sys-apps/kmod lzma pkcs7
 app-arch/tar minimal
 app-arch/libarchive lzo lz4 zstd
-app-editors/nano -magic -spell minimal
-x11-libs/libdrm -libkms video_cards_radeon
+app-editors/nano -spell minimal
+x11-libs/libdrm video_cards_radeon
 x11-base/xorg-server udev xvfb
 media-gfx/inkscape jpeg
-media-gfx/gimp exif jpeg png postscript svg tiff
+media-gfx/gimp exif jpeg png postscript svg tiff webp
 net-misc/curl http2
-net-misc/networkmanager -elogind ncurses
+net-misc/networkmanager ncurses
 net-libs/nodejs -npm -snapshot icu
-media-libs/mesa X video_cards_radeonsi
-media-video/ffmpeg -network webp
+media-libs/mesa video_cards_radeonsi
+media-video/ffmpeg libaom webp
 media-sound/audacity ffmpeg id3tag sbsms
 media-sound/alsa-utils ncurses
 media-sound/jack2 -opus alsa dbus
 media-sound/jack_capture -mp3
 media-sound/cadence -opengl
 dev-libs/libpcre2 pcre16
-media-video/vlc -dvbpsi dav1d mpeg qt5 vpx X
-media-libs/phonon -vlc
+media-video/vlc aom live qt5 vpx
 media-libs/libvpx postproc
 media-gfx/imagemagick corefonts jpeg png svg
 virtual/imagemagick-tools jpeg png svg
@@ -38,15 +37,14 @@ app-text/ghostscript-gpl gtk
 app-text/xmlto text
 net-print/gutenprint gtk ppds
 sys-block/gparted fat ntfs
-sys-libs/libomp offload
+sys-libs/libomp hwloc offload
 dev-lang/perl minimal
 dev-lang/python ncurses sqlite
 dev-lang/rust nightly parallel-compiler
 dev-libs/boost python
-net-libs/libtorrent-rasterbar -dht python
-dev-python/twisted -soap
+net-libs/libtorrent-rasterbar python
 net-p2p/deluge gtk
-net-vpn/openvpn -lzo inotify
+net-vpn/openvpn inotify
 net-analyzer/wireshark -dftest -netlink -opus -randpkt -randpktdump -plugins -sharkd -tshark -udpdump qt5
 app-arch/p7zip rar
 x11-misc/lightdm gtk
@@ -59,21 +57,20 @@ sys-libs/zlib minizip static-libs
 x11-libs/libxcb xkb
 app-text/poppler cairo cxx qt5
 media-libs/gegl cairo
-app-office/libreoffice dbus gtk mariadb pdfimport
-dev-qt/qtgui -gif gif jpeg libinput udev
+app-office/libreoffice -clang dbus gtk mariadb pdfimport
+dev-qt/qtgui gif jpeg libinput udev
 dev-qt/qtcore icu
 dev-qt/qtsql sqlite
 dev-libs/libxml2 python
 dev-libs/libpeas gtk
 dev-libs/libdbusmenu gtk3
 net-irc/hexchat gtk
-lxqt-base/lxqt-panel -volume tray
+lxqt-base/lxqt-panel tray
 lxqt-base/lxqt-meta terminal
 net-vpn/networkmanager-openvpn gtk
 gnome-extra/nm-applet appindicator
 app-crypt/gpgme cxx
 media-libs/harfbuzz graphite icu
-media-gfx/fontforge -X
 www-client/links -X
 media-libs/flac cxx
 media-libs/opus custom-modes
