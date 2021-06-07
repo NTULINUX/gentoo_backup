@@ -1,77 +1,77 @@
 # Use for last stage only
-app-shells/bash -net mem-scramble
-sys-boot/grub -themes -truetype -fonts
-sys-apps/hwids udev
-sys-apps/util-linux ncurses python
-sys-apps/openrc ncurses
-sys-auth/polkit elogind
-sys-auth/pambase elogind
-sys-apps/smartmontools -caps
-dev-libs/gmp cxx
-sys-fs/cryptsetup -gcrypt -openssl nettle
-sys-apps/kmod lzma pkcs7
-app-arch/tar minimal
 app-arch/libarchive lzo lz4 zstd
+app-arch/p7zip rar
+app-arch/tar minimal
+app-crypt/gcr gtk
+app-crypt/gpgme cxx
+app-crypt/pinentry gnome-keyring gtk
 app-editors/nano -spell minimal
-x11-libs/libdrm video_cards_radeon
-x11-base/xorg-server udev xvfb
-media-gfx/inkscape jpeg
-media-gfx/gimp exif jpeg png postscript svg tiff webp
-net-misc/curl http2
-net-misc/networkmanager ncurses
-net-libs/nodejs -npm -snapshot icu
-media-libs/mesa video_cards_radeonsi
-media-video/ffmpeg libaom webp
-media-sound/audacity ffmpeg id3tag sbsms
-media-sound/alsa-utils ncurses
-media-sound/jack2 -opus alsa dbus
-media-sound/jack_capture -mp3
-media-sound/cadence -opengl
-dev-libs/libpcre2 pcre16
-media-video/vlc aom live qt5 vpx
-media-libs/libvpx postproc
-media-gfx/imagemagick corefonts jpeg png svg
-virtual/imagemagick-tools jpeg png svg
-app-text/qpdfview postscript
+app-office/libreoffice -clang dbus gtk mariadb pdfimport
+app-shells/bash -net mem-scramble
 app-text/ghostscript-gpl gtk
+app-text/poppler cairo cxx qt5
+app-text/qpdfview postscript
 app-text/xmlto text
-net-print/gutenprint gtk ppds
-sys-block/gparted fat ntfs
-sys-libs/libomp hwloc offload
 dev-lang/perl minimal
 dev-lang/python ncurses sqlite
 dev-lang/rust nightly parallel-compiler
 dev-libs/boost python
-net-libs/libtorrent-rasterbar python
-net-p2p/deluge gtk
-net-vpn/openvpn inotify
+dev-libs/gmp cxx
+dev-libs/libdbusmenu gtk3
+dev-libs/libpcre2 pcre16
+dev-libs/libpeas gtk
+dev-libs/libxml2 python
+dev-python/PyQt5 -opengl dbus gui svg widgets
+dev-qt/qtcore icu
+dev-qt/qtgui gif jpeg libinput udev
+dev-qt/qtsql sqlite
+gnome-base/gnome-keyring -ssh-agent
+gnome-extra/nm-applet appindicator
+lxqt-base/lxqt-meta terminal
+lxqt-base/lxqt-panel tray
+media-gfx/gimp exif jpeg png postscript svg tiff webp
+media-gfx/imagemagick corefonts jpeg png svg
+media-gfx/inkscape jpeg
+media-libs/flac cxx
+media-libs/gegl cairo
+media-libs/harfbuzz graphite icu
+media-libs/libpng apng
+media-libs/libvpx postproc
+media-libs/mesa video_cards_radeonsi
+media-libs/opus custom-modes
+media-sound/alsa-utils ncurses
+media-sound/audacity ffmpeg id3tag sbsms
+media-sound/cadence -opengl
+media-sound/jack2 -opus alsa dbus
+media-sound/jack_capture -mp3
+media-video/ffmpeg libaom webp
+media-video/vlc aom live qt5 vpx
 net-analyzer/wireshark -dftest -netlink -opus -randpkt -randpktdump -plugins -sharkd -tshark -udpdump qt5
-app-arch/p7zip rar
+net-irc/hexchat gtk
+net-libs/libtorrent-rasterbar python
+net-libs/nodejs -npm -snapshot icu
+net-misc/curl http2
+net-misc/networkmanager ncurses
+net-p2p/deluge gtk
+net-print/gutenprint gtk ppds
+net-vpn/networkmanager-openvpn gtk
+net-vpn/openvpn inotify
+sys-apps/hwids udev
+sys-apps/kmod lzma pkcs7
+sys-apps/openrc ncurses
+sys-apps/smartmontools -caps
+sys-apps/util-linux ncurses python
+sys-auth/pambase elogind
+sys-auth/polkit elogind
+sys-block/gparted fat ntfs
+sys-boot/grub -themes -truetype -fonts
+sys-fs/cryptsetup -gcrypt -openssl nettle
+sys-libs/libomp hwloc offload
+sys-libs/zlib minizip static-libs
+virtual/imagemagick-tools jpeg png svg
+www-client/links -X
+x11-base/xorg-server udev xvfb
+x11-libs/libdrm video_cards_radeon
+x11-libs/libxcb xkb
 x11-misc/lightdm gtk
 x11-misc/lightdm-gtk-greeter branding
-media-libs/libpng apng
-gnome-base/gnome-keyring -ssh-agent
-app-crypt/pinentry gnome-keyring gtk
-app-crypt/gcr gtk
-sys-libs/zlib minizip static-libs
-x11-libs/libxcb xkb
-app-text/poppler cairo cxx qt5
-media-libs/gegl cairo
-app-office/libreoffice -clang dbus gtk mariadb pdfimport
-dev-qt/qtgui gif jpeg libinput udev
-dev-qt/qtcore icu
-dev-qt/qtsql sqlite
-dev-libs/libxml2 python
-dev-libs/libpeas gtk
-dev-libs/libdbusmenu gtk3
-net-irc/hexchat gtk
-lxqt-base/lxqt-panel tray
-lxqt-base/lxqt-meta terminal
-net-vpn/networkmanager-openvpn gtk
-gnome-extra/nm-applet appindicator
-app-crypt/gpgme cxx
-media-libs/harfbuzz graphite icu
-www-client/links -X
-media-libs/flac cxx
-media-libs/opus custom-modes
-dev-python/PyQt5 -opengl dbus gui svg widgets
