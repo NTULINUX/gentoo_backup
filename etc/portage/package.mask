@@ -12,11 +12,8 @@ net-misc/openssh
 =*/*-*_pre*
 =*/*-*_rc*
 
-# Mask GCC 11 for now (Only install GCC .3 releases or greater)
->=sys-devel/gcc-11
-
 # Keep synced with running LTS kernel
->=sys-kernel/linux-headers-5.11
+>=sys-kernel/linux-headers-5.16
 
 # Temporarily mask Python 3.10
 dev-lang/python:3.10

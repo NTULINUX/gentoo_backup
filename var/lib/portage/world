@@ -3,8 +3,11 @@ app-arch/lzop
 app-arch/p7zip
 app-arch/xarchiver
 app-editors/pluma
+app-forensics/chkrootkit
+app-forensics/lynis
+app-forensics/rkhunter
+app-forensics/unhide
 app-misc/screen
-app-office/libreoffice
 app-portage/gentoolkit
 dev-libs/elfutils
 dev-util/rt-tests
@@ -13,7 +16,6 @@ gnome-extra/nm-applet
 kde-apps/gwenview
 kde-apps/okular
 lxqt-base/lxqt-meta
-mail-client/thunderbird
 media-fonts/liberation-fonts
 media-gfx/gimp
 media-sound/alsa-utils
@@ -40,7 +42,6 @@ sys-fs/exfatprogs
 sys-fs/ntfs3g
 sys-kernel/linux-firmware
 sys-process/lsof
-www-client/firefox
 www-client/links
 x11-apps/mesa-progs
 x11-base/xorg-drivers

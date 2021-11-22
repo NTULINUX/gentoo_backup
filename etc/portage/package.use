@@ -46,7 +46,7 @@ media-sound/jack2 -opus alsa dbus
 media-sound/jack_capture -mp3
 media-video/ffmpeg libaom webp
 media-video/vlc aom live qt5 vpx
-net-analyzer/wireshark -dftest -netlink -opus -randpkt -randpktdump -plugins -sharkd -tshark -udpdump qt5
+net-analyzer/wireshark -dftest -netlink -opus -randpkt -randpktdump -plugins -sharkd -udpdump qt5
 net-irc/hexchat gtk
 net-libs/libtorrent-rasterbar python
 net-libs/nodejs -npm -snapshot icu
@@ -68,6 +68,7 @@ sys-boot/grub -themes -truetype -fonts
 sys-fs/cryptsetup -gcrypt -openssl nettle
 sys-libs/libomp hwloc offload
 sys-libs/zlib minizip static-libs
+sys-process/lsof rpc
 virtual/imagemagick-tools jpeg png svg
 www-client/links -X
 x11-base/xorg-server udev xvfb
