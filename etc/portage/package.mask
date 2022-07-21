@@ -1,9 +1,14 @@
+#
+# Mask specific packages / versions
+#
+
 # Never install
 */*-bin
 */*pulseaudio*
 */*systemd*
+<=dev-libs/openssl-3.0.5
 gnome-base/gvfs
-net-misc/openssh
+net-misc/dropbear
 
 # Mask some unstable keywords
 =*/*-*9999*
@@ -12,8 +17,5 @@ net-misc/openssh
 =*/*-*_pre*
 =*/*-*_rc*
 
-# Keep synced with running LTS kernel
->=sys-kernel/linux-headers-5.16
-
-# Temporarily mask Python 3.10
-dev-lang/python:3.10
+# Mask Python >=3.11 until fully supported
+>=dev-lang/python-3.11

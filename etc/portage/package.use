@@ -1,78 +1,66 @@
-# Use for last stage only
-app-arch/libarchive lzo lz4 zstd
+#
+# Package-specific USE flags
+#
+
+app-antivirus/clamav rar
+app-arch/libarchive lzo lz4
 app-arch/p7zip rar
 app-arch/tar minimal
 app-crypt/gcr gtk
-app-crypt/gpgme cxx
-app-crypt/pinentry gnome-keyring gtk
-app-editors/nano -spell minimal
-app-office/libreoffice -clang dbus gtk mariadb pdfimport
+app-editors/nano -spell
+app-office/libreoffice pdfimport
 app-shells/bash -net mem-scramble
-app-text/ghostscript-gpl gtk
-app-text/poppler cairo cxx qt5
-app-text/qpdfview postscript
+app-text/poppler cairo qt5 png tiff
 app-text/xmlto text
-dev-lang/perl minimal
-dev-lang/python ncurses sqlite
-dev-lang/rust nightly parallel-compiler
-dev-libs/boost python
-dev-libs/gmp cxx
+dev-lang/python sqlite
 dev-libs/libdbusmenu gtk3
-dev-libs/libpcre2 pcre16
-dev-libs/libpeas gtk
-dev-libs/libxml2 python
-dev-python/PyQt5 -opengl dbus gui svg widgets
-dev-qt/qtcore icu
-dev-qt/qtgui gif jpeg libinput udev
+dev-python/PyQt5 declarative designer gui multimedia printsupport svg webchannel widgets
+dev-qt/qtgui jpeg
+dev-qt/qtmultimedia widgets
 dev-qt/qtsql sqlite
-gnome-base/gnome-keyring -ssh-agent
-gnome-extra/nm-applet appindicator
+dev-qt/qtwebchannel qml
+dev-qt/qtwebengine widgets
+kde-apps/k3b mad sndfile taglib
+kde-frameworks/kfilemetadata taglib
 lxqt-base/lxqt-meta terminal
 lxqt-base/lxqt-panel tray
-media-gfx/gimp exif jpeg png postscript svg tiff webp
-media-gfx/imagemagick corefonts jpeg png svg
-media-gfx/inkscape jpeg
-media-libs/flac cxx
-media-libs/gegl cairo
-media-libs/harfbuzz graphite icu
-media-libs/libpng apng
-media-libs/libvpx postproc
+media-gfx/fontforge -X
+media-gfx/gimp postscript webp
+media-gfx/inkscape jpeg graphicsmagick postscript svg2
+media-gfx/krita color-management pdf vc
+media-libs/babl lcms
+media-libs/gegl cairo lcms
+media-libs/libcanberra -udev
 media-libs/mesa video_cards_radeonsi
+media-libs/opencv contrib contribdnn qt5
 media-libs/opus custom-modes
-media-sound/alsa-utils ncurses
 media-sound/audacity ffmpeg id3tag sbsms
-media-sound/cadence -opengl
-media-sound/jack2 -opus alsa dbus
-media-sound/jack_capture -mp3
-media-video/ffmpeg libaom webp
-media-video/vlc aom live qt5 vpx
-net-analyzer/wireshark -dftest -netlink -opus -randpkt -randpktdump -plugins -sharkd -udpdump qt5
-net-irc/hexchat gtk
-net-libs/libtorrent-rasterbar python
-net-libs/nodejs -npm -snapshot icu
-net-misc/curl http2
-net-misc/networkmanager ncurses
-net-p2p/deluge gtk
-net-print/gutenprint gtk ppds
-net-vpn/networkmanager-openvpn gtk
-net-vpn/openvpn inotify
-sys-apps/hwids udev
-sys-apps/kmod lzma pkcs7
-sys-apps/openrc ncurses
+media-sound/jack2 alsa
+media-video/ffmpeg libaom openssl webp
+media-video/vlc aom live
+net-analyzer/wireshark -dftest -mergecap -netlink -opus -randpkt -randpktdump -reordercap -plugins -sharkd -text2pcap -tshark -udpdump
+net-libs/libpsl -icu
+net-libs/zeromq drafts
+net-print/cups-filters jpeg png
+net-print/gutenprint gtk
 sys-apps/smartmontools -caps
-sys-apps/util-linux ncurses python
-sys-auth/pambase elogind
-sys-auth/polkit elogind
-sys-block/gparted fat ntfs
-sys-boot/grub -themes -truetype -fonts
-sys-fs/cryptsetup -gcrypt -openssl nettle
-sys-libs/libomp hwloc offload
-sys-libs/zlib minizip static-libs
+sys-fs/cryptsetup -gcrypt nettle
+sys-fs/udisks -elogind
+sys-libs/zlib minizip
 sys-process/lsof rpc
-virtual/imagemagick-tools jpeg png svg
 www-client/links -X
-x11-base/xorg-server udev xvfb
+x11-libs/gdk-pixbuf jpeg
 x11-libs/libdrm video_cards_radeon
-x11-libs/libxcb xkb
-x11-misc/lightdm gtk
 x11-misc/lightdm-gtk-greeter branding
+x11-wm/openbox session
+
+#
+# BUG
+#
+
+# USE="python" broken with LLVM toolchain
+dev-libs/liborcus -python
+# USE="lto" broken with LLVM toolchain
+net-misc/networkmanager -lto
+# USE="pgo" broken with LLVM toolchain
+sys-devel/binutils -pgo

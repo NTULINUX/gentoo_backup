@@ -1,3 +1,0 @@
-# Use Clang with libc++ instead
-# Report bug: g++ is still built and works
-sys-devel/gcc cxx
