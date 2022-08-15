@@ -7,7 +7,8 @@
 =dev-libs/libmspack-*alpha*
 dev-libs/openssl:0/3
 =dev-perl/Mozilla-CA-*9999*
-=dev-python/yapps2-9999
+=dev-python/yapps2-*9999*
+=sci-electronics/linuxcnc-*9999*
 sys-apps/systemd-tmpfiles
 sys-apps/systemd-utils
 =sys-boot/grub-*rc*

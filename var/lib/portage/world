@@ -6,6 +6,7 @@ app-arch/lzop
 app-arch/p7zip
 app-arch/unrar
 app-arch/xarchiver
+app-editors/featherpad
 app-editors/nano
 app-editors/vim
 app-editors/vscodium
@@ -51,6 +52,7 @@ net-misc/yt-dlp
 net-p2p/qbittorrent
 net-print/gutenprint
 net-vpn/wireguard-tools
+sci-electronics/linuxcnc
 sys-apps/dmidecode
 sys-apps/nvme-cli
 sys-apps/smartmontools
