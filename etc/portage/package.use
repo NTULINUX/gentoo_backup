@@ -12,18 +12,15 @@ app-office/libreoffice pdfimport
 app-shells/bash -net mem-scramble
 app-text/poppler cairo qt5 png tiff
 app-text/xmlto text
-dev-lang/python sqlite
 dev-libs/libdbusmenu gtk3
 dev-python/PyQt5 declarative designer gui multimedia printsupport svg webchannel widgets
 dev-qt/qtgui jpeg
 dev-qt/qtmultimedia widgets
-dev-qt/qtsql sqlite
 dev-qt/qtwebchannel qml
 dev-qt/qtwebengine widgets
 kde-apps/k3b mad sndfile taglib
 kde-frameworks/kfilemetadata taglib
 lxqt-base/lxqt-meta terminal
-lxqt-base/lxqt-panel tray
 media-gfx/fontforge -X
 media-gfx/gimp postscript webp
 media-gfx/inkscape jpeg graphicsmagick postscript svg2
@@ -38,12 +35,13 @@ media-sound/audacity ffmpeg id3tag sbsms
 media-sound/jack2 alsa
 media-video/ffmpeg libaom openssl webp
 media-video/vlc aom live
-net-analyzer/wireshark -dftest -mergecap -netlink -opus -randpkt -randpktdump -reordercap -plugins -sharkd -text2pcap -tshark -udpdump
+net-analyzer/wireshark -dftest -mergecap -minizip -netlink -opus -randpkt -randpktdump -reordercap -plugins -sharkd -text2pcap -tshark -udpdump
 net-libs/libpsl -icu
 net-libs/zeromq drafts
 net-print/cups-filters jpeg png
 net-print/gutenprint gtk
 sys-apps/smartmontools -caps
+sys-boot/grub -fonts -themes -truetype
 sys-fs/cryptsetup -gcrypt nettle
 sys-fs/udisks -elogind
 sys-libs/zlib minizip

@@ -25,9 +25,7 @@ dev-tcltk/tclx
 dev-util/rt-tests
 dev-vcs/git
 gnome-extra/nm-applet
-kde-apps/gwenview
 kde-apps/k3b
-kde-apps/kate
 kde-apps/okular
 kde-frameworks/breeze-icons
 lxqt-base/lxqt-meta
@@ -70,7 +68,6 @@ www-client/firefox
 www-client/links
 x11-apps/mesa-progs
 x11-libs/libva-vdpau-driver
-x11-misc/lightdm
 x11-misc/vdpauinfo
 x11-terms/xfce4-terminal
 x11-themes/gentoo-artwork
