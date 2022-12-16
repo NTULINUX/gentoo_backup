@@ -45,6 +45,7 @@ net-libs/zeromq drafts
 net-print/cups-filters jpeg png
 net-print/gutenprint gtk
 sys-apps/smartmontools -caps
+sys-auth/polkit daemon
 sys-boot/grub -fonts -themes -truetype
 sys-fs/cryptsetup -gcrypt nettle
 sys-fs/udisks -elogind
