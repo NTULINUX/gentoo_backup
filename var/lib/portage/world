@@ -15,11 +15,14 @@ app-forensics/rkhunter
 app-forensics/unhide
 app-misc/screen
 app-office/libreoffice
+app-portage/eix
 app-portage/gentoolkit
 dev-libs/elfutils
 dev-libs/libmodbus
+dev-python/distro
 dev-python/pip
 dev-python/pyopengl
+dev-python/sqlalchemy
 dev-tcltk/bwidget
 dev-tcltk/tclx
 dev-util/rt-tests
@@ -50,7 +53,6 @@ net-misc/yt-dlp
 net-p2p/qbittorrent
 net-print/gutenprint
 net-vpn/wireguard-tools
-sci-electronics/linuxcnc
 sys-apps/dmidecode
 sys-apps/nvme-cli
 sys-apps/smartmontools
@@ -67,7 +69,6 @@ sys-process/lsof
 www-client/firefox
 www-client/links
 x11-apps/mesa-progs
-x11-libs/libva-vdpau-driver
 x11-misc/vdpauinfo
 x11-terms/xfce4-terminal
 x11-themes/gentoo-artwork
@@ -81,6 +82,5 @@ xfce-base/xfce4-settings
 xfce-base/xfconf
 xfce-base/xfdesktop
 xfce-base/xfwm4
-xfce-extra/xfce4-power-manager
 xfce-extra/xfce4-screensaver
 xfce-extra/xfce4-taskmanager

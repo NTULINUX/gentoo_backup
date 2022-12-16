@@ -16,6 +16,3 @@ net-misc/dropbear
 =*/*-*_beta*
 =*/*-*_pre*
 =*/*-*_rc*
-
-# Mask Python >=3.11 until fully supported
->=dev-lang/python-3.11
