@@ -33,7 +33,7 @@ media-libs/freetype brotli
 media-libs/gegl cairo lcms
 media-libs/libcanberra -udev
 media-libs/mesa video_cards_radeonsi
-media-libs/opencv contrib contribdnn qt5
+media-libs/opencv contrib contribdnn jpeg qt5
 media-libs/opus custom-modes
 media-sound/audacity ffmpeg id3tag sbsms
 media-sound/jack2 alsa

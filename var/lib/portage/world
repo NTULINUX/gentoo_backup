@@ -25,6 +25,7 @@ dev-python/pyopengl
 dev-python/sqlalchemy
 dev-tcltk/bwidget
 dev-tcltk/tclx
+dev-util/geany
 dev-util/rt-tests
 dev-vcs/git
 gnome-extra/nm-applet
@@ -33,7 +34,6 @@ kde-apps/okular
 kde-frameworks/breeze-icons
 lxqt-base/lxqt-meta
 mail-client/thunderbird
-media-gfx/blender
 media-gfx/gimp
 media-gfx/inkscape
 media-gfx/krita
