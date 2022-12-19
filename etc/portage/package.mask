@@ -1,0 +1,18 @@
+#
+# Mask specific packages / versions
+#
+
+# Never install
+*/*-bin
+*/*pulseaudio*
+*/*systemd*
+<dev-libs/openssl-3.0.7
+gnome-base/gvfs
+net-misc/dropbear
+
+# Mask some unstable keywords
+=*/*-*9999*
+=*/*-*_alpha*
+=*/*-*_beta*
+=*/*-*_pre*
+=*/*-*_rc*

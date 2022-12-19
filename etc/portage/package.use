@@ -1,0 +1,54 @@
+#
+# Package-specific USE flags
+#
+
+app-arch/libarchive lz4 nettle
+app-arch/tar minimal
+app-crypt/gcr gtk
+app-editors/nano -spell
+app-shells/bash -net
+app-text/poppler cairo qt5 png tiff
+app-text/qpdfview postscript
+app-text/xmlto text
+dev-libs/libdbusmenu gtk3
+dev-libs/libportal gtk
+dev-python/PyQt5 declarative designer gui multimedia network opengl svg widgets
+dev-qt/qtgui egl jpeg
+dev-qt/qtmultimedia widgets
+dev-qt/qtwebchannel qml
+dev-qt/qtwebengine widgets
+kde-frameworks/kfilemetadata taglib
+lxqt-base/lxqt-meta terminal
+media-gfx/fontforge -X
+media-gfx/inkscape jpeg graphicsmagick postscript svg2
+media-libs/babl lcms
+media-libs/gegl cairo lcms
+media-libs/libcanberra -udev
+media-libs/opencv contrib contribdnn opengl qt5
+media-video/guvcview qt5
+net-analyzer/wireshark -dftest -minizip -netlink -randpkt -randpktdump -plugins -sharkd -text2pcap -tshark -udpdump
+net-libs/libpsl -icu
+net-libs/zeromq drafts
+sys-apps/smartmontools -caps
+sys-auth/pambase minimal
+sys-auth/polkit daemon
+sys-boot/grub -fonts -themes -truetype
+sys-devel/clang-runtime sanitize
+sys-devel/gcc -jit
+sys-fs/cryptsetup -gcrypt -openssl nettle
+sys-fs/udisks -elogind
+sys-libs/compiler-rt-sanitizers -asan -cfi -dfsan -gwp-asan -hwasan -libfuzzer -lsan -memprof -msan -orc -safestack -scudo -tsan -ubsan -xray
+sys-libs/zlib minizip
+sys-process/lsof rpc
+x11-libs/gdk-pixbuf jpeg
+x11-wm/openbox session
+
+#
+# BUG
+#
+
+# USE="lto" broken with LLVM toolchain
+net-misc/networkmanager -lto
+# USE="pgo" broken with LLVM toolchain
+app-shells/bash -pgo
+sys-devel/binutils -pgo

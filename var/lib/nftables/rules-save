@@ -1,0 +1,17 @@
+#!/sbin/nft -f
+flush ruleset
+table ip filter {
+	chain incoming {
+		type filter hook input priority 0; policy drop;
+		iif "lo" ip daddr 127.0.0.1 ip saddr 127.0.0.1 accept
+		ct state 0x2,0x4 accept
+	}
+
+	chain forwarding {
+		type filter hook forward priority 0; policy drop;
+	}
+
+	chain outgoing {
+		type filter hook output priority 0; policy accept;
+	}
+}
