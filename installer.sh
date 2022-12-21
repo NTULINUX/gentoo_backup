@@ -152,8 +152,8 @@ check_drive()
 		exit 1
 	fi
 
-	if ! grep -e "${ENTIRE_DRIVE}" "/proc/mounts" && \
-		! mount | grep "${ENTIRE_DRIVE}"
+	if ! grep -e "${ENTIRE_DRIVE}" "/proc/mounts" >> /dev/null 2>&1 && \
+		! mount | grep "${ENTIRE_DRIVE}" >> /dev/null 2>&1
 	then
 		printf "\\tNo partitions mounted on: %s\\n" "${ENTIRE_DRIVE}"
 	else
