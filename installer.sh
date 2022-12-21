@@ -108,9 +108,9 @@ legacy_or_uefi()
 	fi
 }
 
-check_disk()
+check_drive()
 {
-	printf "\\n\\tPreparing disks...\\n\\n"
+	printf "\\n\\tPreparing drives...\\n\\n"
 
 	printf "\\tPlease choose your device for the installation
 \\ti.e. /dev/sda /dev/nvme0n1\\n
@@ -132,12 +132,17 @@ check_disk()
 		fi
 
 		if [[ "${ENTIRE_DRIVE}" == *"p"[0-9]* ]] ; then
-			printf "\\n\\tError: Partition has been specified.\\n"
+			printf "\\n\\tError: NVMe Partition has been specified.\\n"
 			exit 1
 		fi
 
-		printf "\\tDisk type: NVMe\\n"
-		DISK_TYPE="NVME"
+		printf "\\tDrive type: NVMe\\n"
+		DRIVE_TYPE="NVME"
+	else
+		if [[ "${ENTIRE_DRIVE}" == *[0-9]* ]] ; then
+			printf "\\n\\tError: Partition has been specified.\\n"
+			exit 1
+		fi
 	fi
 
 	if [[ -b "${ENTIRE_DRIVE}" ]] ; then
@@ -157,7 +162,7 @@ check_disk()
 	fi
 }
 
-wipe_disk()
+wipe_drive()
 {
 	printf "\\n\\tTarget installation media to erase: %s\\n
 \\tAllowing 10 seconds to ensure correct device has been selected.
@@ -180,7 +185,7 @@ wipe_disk()
 
 	wipefs -a -f "${ENTIRE_DRIVE}"
 
-	if [[ "${DISK_TYPE}" == "NVME" ]] ; then
+	if [[ "${DRIVE_TYPE}" == "NVME" ]] ; then
 		blkdiscard "${ENTIRE_DRIVE}"
 	fi
 }
@@ -189,6 +194,6 @@ check_deps
 
 legacy_or_uefi
 
-check_disk
+check_drive
 
-# wipe_disk
+# wipe_drive
