@@ -3,6 +3,8 @@
 # Gentoo stage4 installation script for LinuxCNC
 # Written by Alec Ari
 
+# Yes, I'm writing an installer for something that doesn't exist yet.
+
 set -eou pipefail
 
 printf "\\033[0;33m
@@ -79,11 +81,27 @@ legacy_or_uefi()
 
 	if [[ "${INSTALL_TYPE}" == "LEGACY" || \
 		"${INSTALL_TYPE}" == "Legacy" || \
-		"${INSTALL_TYPE}" == "legacy" || \
-		"${INSTALL_TYPE}" == "UEFI" || \
+		"${INSTALL_TYPE}" == "legacy" ]]
+	then
+		printf "\\n\\tInstallation type: Legacy BIOS\\n"
+	elif [[ "${INSTALL_TYPE}" == "UEFI" || \
 		"${INSTALL_TYPE}" == "uefi" ]]
 	then
-		printf "\\n\\tInstallation type: %s\\n" "${INSTALL_TYPE}"
+		printf "\\n\\tInstallation type: UEFI
+\\tEnsuring system has booted with UEFI Runtime Services...\\n"
+
+		# This method will not work on ancient kernels or those built
+		# with EFI_VARS instead of the replacement, EFIVAR_FS
+		# Double-check with mounted filesystems as well
+		if [[ $(find /sys/firmware/efi/efivars -type f | wc -l) -gt 1 ]] && \
+			grep -e "efivarfs" "/proc/mounts" >> /dev/null 2>&1 && \
+			mount | grep "efivarfs" >> /dev/null 2>&1
+		then
+			printf "\\tUEFI Runtime Services are supported.\\n"
+		else
+			printf "\\n\\tError: UEFI Runtime Services not supported.\\n"
+			exit 1
+		fi	
 	else
 		printf "\\n\\tError: Invalid selection: %s\\n" "${INSTALL_TYPE}"
 		exit 1
@@ -106,12 +124,20 @@ check_disk()
 
 	printf "\\n\\tVerifying entry...\\n"
 	if [[ "${ENTIRE_DRIVE}" == *"nvme"* ]] ; then
-		printf "\\tDisk type: NVMe\\n"
-		DISK_TYPE="NVME"
+		if [[ "${INSTALL_TYPE}" != "UEFI" && \
+			"${INSTALL_TYPE}" != "uefi" ]]
+		then
+			printf "\\n\\tError: UEFI must be selected for NVMe.\\n"
+			exit 1
+		fi
+
 		if [[ "${ENTIRE_DRIVE}" == *"p"[0-9]* ]] ; then
 			printf "\\n\\tError: Partition has been specified.\\n"
 			exit 1
 		fi
+
+		printf "\\tDisk type: NVMe\\n"
+		DISK_TYPE="NVME"
 	fi
 
 	if [[ -b "${ENTIRE_DRIVE}" ]] ; then
