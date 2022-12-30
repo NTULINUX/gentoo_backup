@@ -88,8 +88,11 @@ legacy_or_uefi()
 		"${INSTALL_TYPE}" == "uefi" ]]
 	then
 		printf "\\n\\tInstallation type: UEFI
-\\tEnsuring system has booted with UEFI Runtime Services...\\n"
+\\033[0;33m
+\\tIMPORTANT: Please be sure CSM is disabled in BIOS before continuing!
+\\033[0m\\n" ; sleep 5
 
+		printf "\\tEnsuring system has booted with UEFI Runtime Services...\\n"
 		# This method will not work on ancient kernels or those built
 		# with EFI_VARS instead of the replacement, EFIVAR_FS
 		# Double-check with mounted filesystems as well
