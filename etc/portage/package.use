@@ -24,9 +24,8 @@ media-gfx/inkscape jpeg graphicsmagick postscript svg2
 media-libs/babl lcms
 media-libs/gegl cairo lcms
 media-libs/libcanberra -udev
-media-libs/opencv contrib contribdnn opengl qt5
+media-libs/opencv contrib contribdnn jpeg opengl qt5
 media-video/guvcview qt5
-net-analyzer/wireshark -dftest -minizip -netlink -randpkt -randpktdump -plugins -sharkd -text2pcap -tshark -udpdump
 net-libs/libpsl -icu
 net-libs/zeromq drafts
 sys-apps/smartmontools -caps
