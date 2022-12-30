@@ -111,19 +111,45 @@ legacy_or_uefi()
 	fi
 }
 
-check_drive()
+check_drive_prompt()
 {
 	printf "\\n\\tPreparing drives...\\n\\n"
 
 	printf "\\tPlease choose your device for the installation
-\\ti.e. /dev/sda /dev/nvme0n1\\n
+\\ti.e. /dev/sda or /dev/nvme0n1\\n
 \\tDo not specify a partition, partitioning will be handled automatically.
+\\tTo bring up a list of possible devices, type: list
+\\tIf the list is too long to fully see, try: shortlist
 \\033[0;31m
 \\tWARNING: ALL DATA ON THE SPECIFIED DEVICE WILL BE REMOVED!
 \\tTHIS ACTION CANNOT BE UNDONE!
 \\033[0m\\n"
 
 	read -r "ENTIRE_DRIVE"
+
+	printf "\\n"
+}
+
+check_drive()
+{
+	check_drive_prompt
+
+	while [[ "${ENTIRE_DRIVE}" == "list" || \
+		"${ENTIRE_DRIVE}" == "LIST" || \
+		"${ENTIRE_DRIVE}" == "shortlist" || \
+		"${ENTIRE_DRIVE}" == "SHORTLIST" ]]
+	do
+		case "${ENTIRE_DRIVE}" in
+			list|LIST)
+				fdisk -l
+				check_drive_prompt
+				;;
+			shortlist|SHORTLIST)
+				fdisk -l | grep "Disk" -A 0
+				check_drive_prompt
+				;;
+		esac
+	done
 
 	printf "\\n\\tVerifying entry...\\n"
 	if [[ "${ENTIRE_DRIVE}" == *"nvme"* ]] ; then
