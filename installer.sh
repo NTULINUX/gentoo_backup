@@ -12,6 +12,11 @@ printf "\\033[0;33m
 \\tWritten by Alec Ari
 \\033[0m"
 
+if [[ "${EUID}" -ne 0 ]] ; then
+	printf "\\n\\tError: Must have root privileges.\\n"
+	exit 1
+fi
+
 check_deps()
 {
 	printf "\\n\\tChecking dependencies...\\n"
