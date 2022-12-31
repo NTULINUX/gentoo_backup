@@ -33,7 +33,7 @@ check_deps()
 		exit 1 ;
 	}
 
-	type mkfs.vfat >> /dev/null 2>&1 || \
+	type mkfs.fat >> /dev/null 2>&1 || \
 	{
 		printf "\\n\\tError: dosfstools not installed.\\n" ;
 		exit 1 ;
@@ -171,14 +171,9 @@ check_drive()
 			printf "\\n\\tError: NVMe Partition has been specified.\\n"
 			exit 1
 		fi
-
-		printf "\\tDrive type: NVMe\\n"
-		DRIVE_TYPE="NVME"
-	else
-		if [[ "${ENTIRE_DRIVE}" == *[0-9]* ]] ; then
-			printf "\\n\\tError: Partition has been specified.\\n"
-			exit 1
-		fi
+	elif [[ "${ENTIRE_DRIVE}" == *[0-9]* ]] ; then
+		printf "\\n\\tError: Partition has been specified.\\n"
+		exit 1
 	fi
 
 	if [[ -b "${ENTIRE_DRIVE}" ]] ; then
@@ -221,7 +216,7 @@ wipe_drive()
 
 	wipefs -a -f "${ENTIRE_DRIVE}"
 
-	if [[ "${DRIVE_TYPE}" == "NVME" ]] ; then
+	if [[ "${ENTIRE_DRIVE}" == *"nvme"* ]] ; then
 		blkdiscard "${ENTIRE_DRIVE}"
 	fi
 
@@ -281,9 +276,6 @@ partition_sizes()
 		printf "\\n\\tError: Value: %s out of range.\\n" "${ROOT_PART_SIZE}"
 		exit 1
 	fi
-
-	printf "\\n\\tHome partition size: %sGB
-\\tRoot partition size: %sGB\\n" "${HOME_PART_SIZE}" "${ROOT_PART_SIZE}"
 }
 
 partition_drive()
@@ -331,6 +323,59 @@ partition_drive()
 	fi
 }
 
+choose_filesystem()
+{
+	printf "\\n\\tPlease select either EXT4 or XFS.
+\\tFor NVMe, XFS is recommended (I think...)\\n
+\\tValid options:
+\\t\\tEXT4/ext4
+\\t\\tXFS/xfs\\n\\n"
+
+	read -r "FSTYPE_ARG"
+
+	if [[ "${FSTYPE_ARG}" == "EXT4" || \
+		"${FSTYPE_ARG}" == "ext4" ]]
+	then
+		FSTYPE="EXT4"
+	elif [[ "${FSTYPE_ARG}" == "XFS" || \
+		"${FSTYPE_ARG}" == "xfs" ]]
+	then
+		FSTYPE="XFS"
+	fi
+
+	printf "\\n\\tSelected filesystem: %s\\n\\n" "${FSTYPE}"
+}
+
+format_partitions()
+{
+	if [[ "${ENTIRE_DRIVE}" == *"nvme"* ]] ; then
+		# UEFI is always true for NVMe installations
+		mkfs.fat -F 32 "${ENTIRE_DRIVE}p1"
+		if [[ "${FSTYPE}" == "EXT4" ]] ; then
+			mkfs.ext4 "${ENTIRE_DRIVE}p2"
+			mkfs.ext4 "${ENTIRE_DRIVE}p3"
+			mkfs.ext4 "${ENTIRE_DRIVE}p4"
+		elif [[ "${FSTYPE}" == "XFS" ]] ; then
+			mkfs.xfs "${ENTIRE_DRIVE}p2"
+			mkfs.xfs "${ENTIRE_DRIVE}p3"
+			mkfs.xfs "${ENTIRE_DRIVE}p4"
+		fi
+	# (Not NVMe) Only if UEFI is enabled do we format the first partition
+	elif [[ "${INSTALL_TYPE}" == "UEFI" ]] ; then
+		mkfs.fat -F 32 "${ENTIRE_DRIVE}1"
+	fi
+
+	if [[ "${FSTYPE}" == "EXT4" ]] ; then
+		mkfs.ext4 "${ENTIRE_DRIVE}2"
+		mkfs.ext4 "${ENTIRE_DRIVE}3"
+		mkfs.ext4 "${ENTIRE_DRIVE}4"
+	elif [[ "${FSTYPE}" == "XFS" ]] ; then
+		mkfs.xfs "${ENTIRE_DRIVE}2"
+		mkfs.xfs "${ENTIRE_DRIVE}3"
+		mkfs.xfs "${ENTIRE_DRIVE}4"
+	fi
+}
+
 check_deps
 
 legacy_or_uefi
@@ -342,3 +387,7 @@ check_drive
 partition_sizes
 
 # partition_drive
+
+choose_filesystem
+
+# format_partitions
