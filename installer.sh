@@ -82,16 +82,18 @@ legacy_or_uefi()
 \\tIMPORTANT: For NVMe installation media, UEFI _MUST_ be selected!
 \\033[0m\\n"
 
-	read -r "INSTALL_TYPE"
+	read -r "INSTALL_TYPE_ARG"
 
-	if [[ "${INSTALL_TYPE}" == "LEGACY" || \
-		"${INSTALL_TYPE}" == "Legacy" || \
-		"${INSTALL_TYPE}" == "legacy" ]]
+	if [[ "${INSTALL_TYPE_ARG}" == "LEGACY" || \
+		"${INSTALL_TYPE_ARG}" == "Legacy" || \
+		"${INSTALL_TYPE_ARG}" == "legacy" ]]
 	then
+		INSTALL_TYPE="LEGACY"
 		printf "\\n\\tInstallation type: Legacy BIOS\\n"
-	elif [[ "${INSTALL_TYPE}" == "UEFI" || \
-		"${INSTALL_TYPE}" == "uefi" ]]
+	elif [[ "${INSTALL_TYPE_ARG}" == "UEFI" || \
+		"${INSTALL_TYPE_ARG}" == "uefi" ]]
 	then
+		INSTALL_TYPE="UEFI"
 		printf "\\n\\tInstallation type: UEFI
 \\033[0;33m
 \\tIMPORTANT: Please be sure CSM is disabled in BIOS before continuing!
@@ -121,8 +123,10 @@ check_drive_prompt()
 	printf "\\n\\tPreparing drives...\\n\\n"
 
 	printf "\\tPlease choose your device for the installation
-\\ti.e. /dev/sda or /dev/nvme0n1\\n
-\\tDo not specify a partition, partitioning will be handled automatically.
+\\ti.e. /dev/sda or /dev/nvme0n1 etc.
+\\033[0;33m
+\\tIMPORTANT: Do not specify a partition, an entire drive is required.
+\\033[0m
 \\tTo bring up a list of possible devices, type: list
 \\tIf the list is too long to fully see, try: shortlist
 \\033[0;31m
@@ -156,11 +160,9 @@ check_drive()
 		esac
 	done
 
-	printf "\\n\\tVerifying entry...\\n"
+	printf "\\tVerifying entry...\\n"
 	if [[ "${ENTIRE_DRIVE}" == *"nvme"* ]] ; then
-		if [[ "${INSTALL_TYPE}" != "UEFI" && \
-			"${INSTALL_TYPE}" != "uefi" ]]
-		then
+		if [[ "${INSTALL_TYPE}" != "UEFI" ]] ; then
 			printf "\\n\\tError: UEFI must be selected for NVMe.\\n"
 			exit 1
 		fi
@@ -222,6 +224,111 @@ wipe_drive()
 	if [[ "${DRIVE_TYPE}" == "NVME" ]] ; then
 		blkdiscard "${ENTIRE_DRIVE}"
 	fi
+
+	sleep 5 && sync
+
+	printf "\\tDone.\\n"
+}
+
+partition_sizes()
+{
+	# Use sane defaults for both legacy BIOS and UEFI
+	if [[ "${INSTALL_TYPE}" == "LEGACY" ]] ; then
+		BIOS_PART_SIZE="2M"
+	elif [[ "${INSTALL_TYPE}" == "UEFI" ]] ; then
+		EFI_PART_SIZE="100M"
+	fi
+
+	# Sane default for boot partition
+	BOOT_PART_SIZE="1G"
+
+	printf "\\n\\tPlease specify the size for the home partition ( /home )
+\\tin gigabytes (GB.)\\n
+\\tValue must be between 2 and 16000 (2 = 2GB, 16000 = 16TB)
+\\tValue must be an exact integer.
+\\tDo not specify a unit (i.e. m/M/MB g/G/GB t/T/TB)\\n\\n"
+
+	read -r "HOME_PART_SIZE"
+
+	if [[ "${HOME_PART_SIZE}" == [!0-9] || \
+		"${HOME_PART_SIZE}" == *[!0-9]* ]]
+	then
+		printf "\\n\\tError: Value must be an integer.\\n"
+		exit 1
+	elif [[ "${HOME_PART_SIZE}" -lt 2 || \
+		"${HOME_PART_SIZE}" -gt 16000 ]]
+	then
+		printf "\\n\\tError: Value: %s out of range.\\n" "${HOME_PART_SIZE}"
+		exit 1
+	fi
+
+	printf "\\n\\tPlease specify the size for the root partition ( / )
+\\tin gigabytes (GB.)\\n
+\\tValue must be between 10 and 16000 (10 = 10GB, 16000 = 16TB)
+\\tValue must be an exact integer.
+\\tDo not specify a unit (i.e. m/M/MB g/G/GB t/T/TB)\\n\\n"
+
+	read -r "ROOT_PART_SIZE"
+
+	if [[ "${ROOT_PART_SIZE}" == [!0-9] || \
+		"${ROOT_PART_SIZE}" == *[!0-9]* ]]
+	then
+		printf "\\n\\tError: Value must be an integer.\\n"
+		exit 1
+	elif [[ "${ROOT_PART_SIZE}" -lt 10 || \
+		"${ROOT_PART_SIZE}" -gt 16000 ]]
+	then
+		printf "\\n\\tError: Value: %s out of range.\\n" "${ROOT_PART_SIZE}"
+		exit 1
+	fi
+
+	printf "\\n\\tHome partition size: %sGB
+\\tRoot partition size: %sGB\\n" "${HOME_PART_SIZE}" "${ROOT_PART_SIZE}"
+}
+
+partition_drive()
+{
+	if [[ "${INSTALL_TYPE}" == "LEGACY" ]] ; then
+		BIOS_GUID="21686148-6449-6E6F-744E-656564454649"
+	elif [[ "${INSTALL_TYPE}" == "UEFI" ]] ; then
+		EFI_GUID="C12A7328-F81F-11D2-BA4B-00A0C93EC93B"
+	fi
+
+	BOOT_GUID="BC13C2FF-59E6-4262-A352-B275FD6F7172"
+	HOME_GUID="933AC7E1-2EB4-4F13-B844-0E14E2AEF915"
+	ROOT_GUID="4F68BCE3-E8CD-4DB1-96E7-FBCAF984B709"
+
+	printf "\\n\\tPartitioning device: %s using the following layout:\\n\\n" \
+		"${ENTIRE_DRIVE}"
+
+	if [[ "${INSTALL_TYPE}" == "LEGACY" ]] ; then
+		printf "\\tBIOS boot partition: %s\\n" "${BIOS_PART_SIZE}"
+	elif [[ "${INSTALL_TYPE}" == "UEFI" ]] ; then
+		printf "\\tEFI system partition: %s\\n" "${EFI_PART_SIZE}"
+	fi
+
+	printf "\\tLinux extended boot partition ( /boot ): %s
+\\tLinux home partition ( /home ): %sG
+\\tLinux root (x86-64) partition ( / ): %sG\\n\\n" \
+	"${BOOT_PART_SIZE}" "${HOME_PART_SIZE}" "${ROOT_PART_SIZE}"
+
+	if [[ "${INSTALL_TYPE}" == "LEGACY" ]] ; then
+		sfdisk -w always -W always "${ENTIRE_DRIVE}" <<-EOF
+			label :gpt
+			,"${BIOS_PART_SIZE}","${BIOS_GUID}"
+			,"${BOOT_PART_SIZE}","${BOOT_GUID}"
+			,"${HOME_PART_SIZE}G","${HOME_GUID}"
+			,"${ROOT_PART_SIZE}G","${ROOT_GUID}"
+		EOF
+	elif [[ "${INSTALL_TYPE}" == "UEFI" ]] ; then
+		sfdisk -w always -W always "${ENTIRE_DRIVE}" <<-EOF
+			label :gpt
+			,"${EFI_PART_SIZE}","${EFI_GUID}"
+			,"${BOOT_PART_SIZE}","${BOOT_GUID}"
+			,"${HOME_PART_SIZE}G","${HOME_GUID}"
+			,"${ROOT_PART_SIZE}G","${ROOT_GUID}"
+		EOF
+	fi
 }
 
 check_deps
@@ -231,3 +338,7 @@ legacy_or_uefi
 check_drive
 
 # wipe_drive
+
+partition_sizes
+
+# partition_drive
