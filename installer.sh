@@ -79,7 +79,8 @@ legacy_or_uefi()
 \\t\\tLEGACY/Legacy/legacy
 \\t\\tUEFI/uefi
 \\033[0;33m
-\\tIMPORTANT: For NVMe installation media, UEFI _MUST_ be selected!
+\\tIMPORTANT:
+\\tFor NVMe installation media, UEFI _MUST_ be selected!
 \\033[0m\\n"
 
 	read -r "INSTALL_TYPE_ARG"
@@ -89,14 +90,19 @@ legacy_or_uefi()
 		"${INSTALL_TYPE_ARG}" == "legacy" ]]
 	then
 		INSTALL_TYPE="LEGACY"
-		printf "\\n\\tInstallation type: Legacy BIOS\\n"
+		printf "\\n\\tInstallation type: Legacy BIOS
+\\033[0;33m
+\\tIMPORTANT:
+\\tPlease be sure CSM is enabled (if applicable) in BIOS before continuing!
+\\033[0m\\n" ; sleep 5
 	elif [[ "${INSTALL_TYPE_ARG}" == "UEFI" || \
 		"${INSTALL_TYPE_ARG}" == "uefi" ]]
 	then
 		INSTALL_TYPE="UEFI"
 		printf "\\n\\tInstallation type: UEFI
 \\033[0;33m
-\\tIMPORTANT: Please be sure CSM is disabled in BIOS before continuing!
+\\tIMPORTANT:
+\\tPlease be sure CSM is disabled in BIOS before continuing!
 \\033[0m\\n" ; sleep 5
 
 		printf "\\tEnsuring system has booted with UEFI Runtime Services...\\n"
@@ -111,36 +117,36 @@ legacy_or_uefi()
 		else
 			printf "\\n\\tError: UEFI Runtime Services not supported.\\n"
 			exit 1
-		fi	
+		fi
 	else
-		printf "\\n\\tError: Invalid selection: %s\\n" "${INSTALL_TYPE}"
+		printf "\\n\\tError: Invalid selection: %s\\n" "${INSTALL_TYPE_ARG}"
 		exit 1
 	fi
 }
 
 check_drive_prompt()
 {
-	printf "\\n\\tPreparing drives...\\n\\n"
-
-	printf "\\tPlease choose your device for the installation
+	printf "\\n\\tPlease choose your device for the installation
 \\ti.e. /dev/sda or /dev/nvme0n1 etc.
 \\033[0;33m
-\\tIMPORTANT: Do not specify a partition, an entire drive is required.
+\\tIMPORTANT:
+\\tDo not specify a partition, an entire drive is required.
 \\033[0m
 \\tTo bring up a list of possible devices, type: list
 \\tIf the list is too long to fully see, try: shortlist
 \\033[0;31m
-\\tWARNING: ALL DATA ON THE SPECIFIED DEVICE WILL BE REMOVED!
+\\tWARNING:
+\\tALL DATA ON THE SPECIFIED DEVICE WILL BE REMOVED!
 \\tTHIS ACTION CANNOT BE UNDONE!
 \\033[0m\\n"
 
-	read -r "ENTIRE_DRIVE"
-
-	printf "\\n"
+	read -r "ENTIRE_DRIVE" ; printf "\\n"
 }
 
 check_drive()
 {
+	printf "\\n\\tPreparing drives...\\n"
+
 	check_drive_prompt
 
 	while [[ "${ENTIRE_DRIVE}" == "list" || \
@@ -161,13 +167,14 @@ check_drive()
 	done
 
 	printf "\\tVerifying entry...\\n"
-	if [[ "${ENTIRE_DRIVE}" == *"nvme"* ]] ; then
+
+	if [[ "${ENTIRE_DRIVE}" == "/dev/nvme"* ]] ; then
 		if [[ "${INSTALL_TYPE}" != "UEFI" ]] ; then
 			printf "\\n\\tError: UEFI must be selected for NVMe.\\n"
 			exit 1
 		fi
 
-		if [[ "${ENTIRE_DRIVE}" == *"p"[0-9]* ]] ; then
+		if [[ "${ENTIRE_DRIVE}" == *"p"* ]] ; then
 			printf "\\n\\tError: NVMe Partition has been specified.\\n"
 			exit 1
 		fi
@@ -176,7 +183,7 @@ check_drive()
 		exit 1
 	fi
 
-	if [[ -b "${ENTIRE_DRIVE}" ]] ; then
+	if [[ -b "${ENTIRE_DRIVE}" && "${ENTIRE_DRIVE}" == "/dev/"* ]] ; then
 		printf "\\tBlock device: %s is valid.\\n" "${ENTIRE_DRIVE}"
 	else
 		printf "\\n\\tError: Invalid block device: %s\\n" "${ENTIRE_DRIVE}"
@@ -186,11 +193,14 @@ check_drive()
 	if ! grep -e "${ENTIRE_DRIVE}" "/proc/mounts" >> /dev/null 2>&1 && \
 		! mount | grep "${ENTIRE_DRIVE}" >> /dev/null 2>&1
 	then
-		printf "\\tNo partitions mounted on: %s\\n" "${ENTIRE_DRIVE}"
+		printf "\\tNo mount points found on: %s\\n" "${ENTIRE_DRIVE}"
 	else
-		printf "\\n\\tError: %s has partitions mounted.\\n" "${ENTIRE_DRIVE}"
+		printf "\\n\\tError: %s is or has partitions mounted.\\n" \
+			"${ENTIRE_DRIVE}"
 		exit 1
 	fi
+
+	printf "\\tDone.\\n"
 }
 
 wipe_drive()
@@ -209,20 +219,20 @@ wipe_drive()
 	printf "\\t2.\\n" ; sleep 1
 	printf "\\t1.\\n" ; sleep 1
 
-	printf "Removing data on: %s\\n" "${ENTIRE_DRIVE}"
+	printf "\\n\\tRemoving data on: %s\\n\\n" "${ENTIRE_DRIVE}"
 
-	dd if=/dev/zero of="${ENTIRE_DRIVE}" bs=8M count=128 \
-		oflag=sync status=progress
+	wipefs -a -f "${ENTIRE_DRIVE}" ; printf "\\n"
 
-	wipefs -a -f "${ENTIRE_DRIVE}"
+	dd if=/dev/zero of="${ENTIRE_DRIVE}" bs=8M count=16 \
+		oflag=sync status=progress ; printf "\\n"
 
-	if [[ "${ENTIRE_DRIVE}" == *"nvme"* ]] ; then
+	if [[ "${ENTIRE_DRIVE}" == "/dev/nvme"* ]] ; then
 		blkdiscard "${ENTIRE_DRIVE}"
 	fi
 
 	sleep 5 && sync
 
-	printf "\\tDone.\\n"
+	printf "\\n\\tDone.\\n"
 }
 
 partition_sizes()
@@ -321,6 +331,8 @@ partition_drive()
 			,"${ROOT_PART_SIZE}G","${ROOT_GUID}"
 		EOF
 	fi
+
+	printf "\\n\\tDone.\\n"
 }
 
 choose_filesystem()
@@ -341,14 +353,19 @@ choose_filesystem()
 		"${FSTYPE_ARG}" == "xfs" ]]
 	then
 		FSTYPE="XFS"
+	else
+		printf "\\n\\tError: Invalid selection: %s\\n" "${FSTYPE_ARG}"
+		exit 1
 	fi
 
-	printf "\\n\\tSelected filesystem: %s\\n\\n" "${FSTYPE}"
+	printf "\\n\\tSelected filesystem: %s\\n" "${FSTYPE}"
 }
 
 format_partitions()
 {
-	if [[ "${ENTIRE_DRIVE}" == *"nvme"* ]] ; then
+	printf "\\n\\tFormatting partitions...\\n\\n"
+
+	if [[ "${ENTIRE_DRIVE}" == "/dev/nvme"* ]] ; then
 		# UEFI is always true for NVMe installations
 		mkfs.fat -F 32 "${ENTIRE_DRIVE}p1"
 		if [[ "${FSTYPE}" == "EXT4" ]] ; then
@@ -374,6 +391,8 @@ format_partitions()
 		mkfs.xfs "${ENTIRE_DRIVE}3"
 		mkfs.xfs "${ENTIRE_DRIVE}4"
 	fi
+
+	printf "\\n\\tDone.\\n"
 }
 
 check_deps
