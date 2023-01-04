@@ -17,6 +17,8 @@ if [[ "${EUID}" -ne 0 ]] ; then
 	exit 1
 fi
 
+ROOT_MOUNT="/mnt/gentoo-cnc"
+
 check_deps()
 {
 	printf "\\n\\tChecking dependencies...\\n"
@@ -332,6 +334,19 @@ partition_drive()
 		EOF
 	fi
 
+	if [[ "${ENTIRE_DRIVE}" == "/dev/nvme"* ]] ; then
+		EFI_PART="${ENTIRE_DRIVE}p1"
+		BOOT_PART="${ENTIRE_DRIVE}p2"
+		HOME_PART="${ENTIRE_DRIVE}p3"
+		ROOT_PART="${ENTIRE_DRIVE}p4"
+	elif [[ "${INSTALL_TYPE}" == "UEFI" ]] ; then
+		EFI_PART="${ENTIRE_DRIVE}1"
+	fi
+
+	BOOT_PART="${ENTIRE_DRIVE}2"
+	HOME_PART="${ENTIRE_DRIVE}3"
+	ROOT_PART="${ENTIRE_DRIVE}4"
+
 	printf "\\n\\tDone.\\n"
 }
 
@@ -365,34 +380,92 @@ format_partitions()
 {
 	printf "\\n\\tFormatting partitions...\\n\\n"
 
-	if [[ "${ENTIRE_DRIVE}" == "/dev/nvme"* ]] ; then
-		# UEFI is always true for NVMe installations
-		mkfs.fat -F 32 "${ENTIRE_DRIVE}p1"
-		if [[ "${FSTYPE}" == "EXT4" ]] ; then
-			mkfs.ext4 "${ENTIRE_DRIVE}p2"
-			mkfs.ext4 "${ENTIRE_DRIVE}p3"
-			mkfs.ext4 "${ENTIRE_DRIVE}p4"
-		elif [[ "${FSTYPE}" == "XFS" ]] ; then
-			mkfs.xfs "${ENTIRE_DRIVE}p2"
-			mkfs.xfs "${ENTIRE_DRIVE}p3"
-			mkfs.xfs "${ENTIRE_DRIVE}p4"
-		fi
-	# (Not NVMe) Only if UEFI is enabled do we format the first partition
-	elif [[ "${INSTALL_TYPE}" == "UEFI" ]] ; then
-		mkfs.fat -F 32 "${ENTIRE_DRIVE}1"
+	# Only if UEFI is enabled do we format the first partition
+	if [[ "${INSTALL_TYPE}" == "UEFI" ]] ; then
+		mkfs.fat -F 32 "${EFI_PART}"
 	fi
 
 	if [[ "${FSTYPE}" == "EXT4" ]] ; then
-		mkfs.ext4 "${ENTIRE_DRIVE}2"
-		mkfs.ext4 "${ENTIRE_DRIVE}3"
-		mkfs.ext4 "${ENTIRE_DRIVE}4"
+		mkfs.ext4 "${BOOT_PART}"
+		mkfs.ext4 "${HOME_PART}"
+		mkfs.ext4 "${ROOT_PART}"
 	elif [[ "${FSTYPE}" == "XFS" ]] ; then
-		mkfs.xfs "${ENTIRE_DRIVE}2"
-		mkfs.xfs "${ENTIRE_DRIVE}3"
-		mkfs.xfs "${ENTIRE_DRIVE}4"
+		mkfs.xfs "${BOOT_PART}"
+		mkfs.xfs "${HOME_PART}"
+		mkfs.xfs "${ROOT_PART}"
 	fi
 
 	printf "\\n\\tDone.\\n"
+}
+
+mount_init_filesystems()
+{
+	printf "\\n\\tPreparing to mount filesystems for installation...\\n"
+
+	printf "\\tEnsuring directory: %s does not exist...\\n" "${ROOT_MOUNT}"
+
+	if [[ ! -d "${ROOT_MOUNT}" ]] ; then
+		printf "\\tGood.\\n"
+	else
+		printf "\\n\\tError: Found: %s\\n" "${ROOT_MOUNT}"
+		exit 1
+	fi
+
+	printf "\\tEnsuring directory: %s is unmounted...\\n" "${ROOT_MOUNT}"
+
+	if ! grep -e "${ROOT_MOUNT}" "/proc/mounts" >> /dev/null 2>&1 && \
+		! mount | grep "${ROOT_MOUNT}" >> /dev/null 2>&1
+	then
+		printf "\\tNo mount point found on: %s\\n" "${ROOT_MOUNT}"
+	else
+		printf "\\n\\tError: %s is mounted.\\n" "${ROOT_MOUNT}"
+		exit 1
+	fi
+
+	# Some distros are OCD about mounting everything ASAP because ADHD
+	printf "\\tEnsuring target media is still unmounted...\\n"
+
+	if ! grep -e "${ENTIRE_DRIVE}" "/proc/mounts" >> /dev/null 2>&1 && \
+		! mount | grep "${ENTIRE_DRIVE}" >> /dev/null 2>&1
+	then
+		printf "\\tNo mount points found on: %s\\n" "${ENTIRE_DRIVE}"
+	else
+		printf "\\n\\tError: %s is or has partitions mounted.\\n" \
+			"${ENTIRE_DRIVE}"
+		exit 1
+	fi
+
+	printf "\\tCreating top level directory for installation...\\n"
+
+	mkdir -p "${ROOT_MOUNT}" || \
+	{
+		printf "\\n\\tError: Failed to create: %s\\n" "${ROOT_MOUNT}" ;
+		exit 1 ;
+	}
+
+	printf "\\n\\tMounting filesystems...\\n"
+
+	mount "${ROOT_PART}" "${ROOT_MOUNT}" || \
+	{
+		printf "\\n\\tError: Failed to mount: %s to: %s\\n" \
+			"${ROOT_PART}" "${ROOT_MOUNT}" ;
+		exit 1 ;
+	}
+
+	if [[ "${INSTALL_TYPE}" == "UEFI" ]] ; then
+		mkdir -p "${ROOT_MOUNT}/efi" || \
+		{
+			printf "\\n\\tError: Failed to create: %s\\n" "${ROOT_MOUNT}/efi" ;
+			exit 1 ;
+		}
+
+		mount "${EFI_PART}" "${ROOT_MOUNT}/efi" || \
+		{
+			printf "\\n\\tError: Failed to mount: %s to: %s\\n" \
+				"${EFI_PART}" "${ROOT_MOUNT}/efi" ;
+			exit 1 ;
+		}
+	fi
 }
 
 check_deps
@@ -410,3 +483,5 @@ partition_sizes
 choose_filesystem
 
 # format_partitions
+
+# mount_init_filesystems
