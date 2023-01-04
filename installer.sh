@@ -121,7 +121,8 @@ legacy_or_uefi()
 			exit 1
 		fi
 	else
-		printf "\\n\\tError: Invalid selection: %s\\n" "${INSTALL_TYPE_ARG}"
+		printf "\\n\\tError: Invalid selection: %s\\n" \
+			"${INSTALL_TYPE_ARG}"
 		exit 1
 	fi
 }
@@ -265,7 +266,8 @@ partition_sizes()
 	elif [[ "${HOME_PART_SIZE}" -lt 2 || \
 		"${HOME_PART_SIZE}" -gt 16000 ]]
 	then
-		printf "\\n\\tError: Value: %s out of range.\\n" "${HOME_PART_SIZE}"
+		printf "\\n\\tError: Value: %s out of range.\\n" \
+			"${HOME_PART_SIZE}"
 		exit 1
 	fi
 
@@ -285,7 +287,8 @@ partition_sizes()
 	elif [[ "${ROOT_PART_SIZE}" -lt 10 || \
 		"${ROOT_PART_SIZE}" -gt 16000 ]]
 	then
-		printf "\\n\\tError: Value: %s out of range.\\n" "${ROOT_PART_SIZE}"
+		printf "\\n\\tError: Value: %s out of range.\\n" \
+			"${ROOT_PART_SIZE}"
 		exit 1
 	fi
 }
@@ -443,7 +446,7 @@ mount_init_filesystems()
 		exit 1 ;
 	}
 
-	printf "\\n\\tMounting filesystems...\\n"
+	printf "\\n\\tMounting root filesystem...\\n"
 
 	mount "${ROOT_PART}" "${ROOT_MOUNT}" || \
 	{
@@ -452,10 +455,44 @@ mount_init_filesystems()
 		exit 1 ;
 	}
 
+	printf "\\n\\tMounting boot filesystem...\\n"
+
+	mount "${BOOT_PART}" "${ROOT_MOUNT}/boot" || \
+	{
+		printf "\\n\\tError: Failed to mount: %s to: %s\\n" \
+			"${BOOT_PART}" "${ROOT_MOUNT}/boot" ;
+		exit 1 ;
+	}
+
+	printf "\\n\\tDone.\\n"
+}
+
+install_stage4()
+{
+	printf "\\n\\tInstalling Gentoo for LinuxCNC...\\n"
+
+	tar --numeric-owner --xattrs-include='*.*' \
+		-xpf gentoo-cnc.tar.xz -C "${ROOT_MOUNT}/" || \
+	{
+		printf "\\n\\tError: Failed to decompress: %s to: %s\\n" \
+			"gentoo-cnc.tar.xz" "${ROOT_MOUNT}/"
+		exit 1 ;
+	}
+
+	sleep 5 && sync
+
+	printf "\\n\\tDone.\\n"
+}
+
+mount_final_filesystems()
+{
+	printf "\\n\\tMounting final filesystems for GRUB installation...\\n"
+
 	if [[ "${INSTALL_TYPE}" == "UEFI" ]] ; then
 		mkdir -p "${ROOT_MOUNT}/efi" || \
 		{
-			printf "\\n\\tError: Failed to create: %s\\n" "${ROOT_MOUNT}/efi" ;
+			printf "\\n\\tError: Failed to create: %s\\n" \
+				"${ROOT_MOUNT}/efi" ;
 			exit 1 ;
 		}
 
@@ -465,7 +502,167 @@ mount_init_filesystems()
 				"${EFI_PART}" "${ROOT_MOUNT}/efi" ;
 			exit 1 ;
 		}
+
+		mount --rbind "/dev" "${ROOT_MOUNT}/dev" || \
+		{
+			printf "\\n\\tError: Failed to mount: %s to: %s\\n" \
+				"/dev" "${ROOT_MOUNT}/dev" ;
+			exit 1 ;
+		}
+
+		mount --rbind "/sys" "${ROOT_MOUNT}/sys" || \
+		{
+			printf "\\n\\tError: Failed to mount: %s to: %s\\n" \
+				"/sys" "${ROOT_MOUNT}/sys" ;
+			exit 1 ;
+		}
+	elif [[ "${INSTALL_TYPE}" == "LEGACY" ]] ; then
+		mount --bind "/dev" "${ROOT_MOUNT}/dev" || \
+		{
+			printf "\\n\\tError: Failed to mount: %s to: %s\\n" \
+				"/dev" "${ROOT_MOUNT}/dev" ;
+			exit 1 ;
+		}
+
+		mount --bind "/sys" "${ROOT_MOUNT}/sys" || \
+		{
+			printf "\\n\\tError: Failed to mount: %s to: %s\\n" \
+				"/sys" "${ROOT_MOUNT}/sys" ;
+			exit 1 ;
+		}
 	fi
+
+	mount -t proc none "${ROOT_MOUNT}/proc" || \
+	{
+		printf "\\n\\tError: Failed to mount proc filesystem to: %s\\n" \
+			"${ROOT_MOUNT}/proc" ;
+		exit 1 ;
+	}
+
+	mount --bind "/run" "${ROOT_MOUNT}/run" || \
+	{
+		printf "\\n\\tError: Failed to mount: %s to: %s\\n" \
+			"/run" "${ROOT_MOUNT}/run" ;
+		exit 1 ;
+	}
+
+	printf "\\n\\tDone.\\n"
+}
+
+generate_fstab()
+{
+	printf "\\n\\tGenerating fstab file...\\n"
+
+	printf "%b\\n" \
+"# /etc/fstab: static file system information.
+#
+# noatime turns off atimes for increased performance (atimes normally aren't 
+# needed); notail increases performance of ReiserFS (at the expense of storage 
+# efficiency).  It's safe to drop the noatime options if you want and to 
+# switch between notail / tail freely.
+#
+# The root filesystem should have a pass number of either 0 or 1.
+# All other filesystems should have a pass number of 0 or greater than 1.
+#
+# See the manpage fstab(5) for more information.
+#
+
+# <fs>\\t<mountpoint>\\t<type>\\t<opts>\\t<dump/pass>" \
+	&> "${ROOT_MOUNT}/etc/fstab"
+
+	if [[ "${INSTALL_TYPE}" == "UEFI" && \
+		"${FSTYPE}" == "EXT4" ]]
+	then
+		printf "%b\\n" \
+"${EFI_PART}\\t/efi\\tvfat\\tdefaults\\t0\\t2
+${BOOT_PART}\\t/boot\\text4\\tdefaults\\t0\\t2
+${HOME_PART}\\t/home\\text4\\tdefaults\\t0\\t2
+${ROOT_PART}\\t/\\text4\\tdefaults\\t0\\t1" >> "${ROOT_MOUNT}/etc/fstab"
+	elif [[ "${INSTALL_TYPE}" == "UEFI" && \
+		"${FSTYPE}" == "XFS" ]]
+	then
+		printf "%b\\n" \
+"${EFI_PART}\\t/efi\\tvfat\\tdefaults\\t0\\t2
+${BOOT_PART}\\t/boot\\txfs\\tdefaults\\t0\\t2
+${HOME_PART}\\t/home\\txfs\\tdefaults\\t0\\t2
+${ROOT_PART}\\t/\\txfs\\tdefaults\\t0\\t1" >> "${ROOT_MOUNT}/etc/fstab"
+	elif [[ "${INSTALL_TYPE}" == "LEGACY" && \
+		"${FSTYPE}" == "EXT4" ]]
+	then
+		printf "%b\\n" \
+"${BOOT_PART}\\t/boot\\text4\\tdefaults\\t0\\t2
+${HOME_PART}\\t/home\\text4\\tdefaults\\t0\\t2
+${ROOT_PART}\\t/\\text4\\tdefaults\\t0\\t1" >> "${ROOT_MOUNT}/etc/fstab"
+	elif [[ "${INSTALL_TYPE}" == "LEGACY" && \
+		"${FSTYPE}" == "XFS" ]]
+	then
+		printf "%b\\n" \
+"${BOOT_PART}\\t/boot\\txfs\\tdefaults\\t0\\t2
+${HOME_PART}\\t/home\\txfs\\tdefaults\\t0\\t2
+${ROOT_PART}\\t/\\txfs\\tdefaults\\t0\\t1" >> "${ROOT_MOUNT}/etc/fstab"
+	fi
+}
+
+install_grub()
+{
+	# TODO: chroot necessary for this to work
+	printf "\\n\\tInstalling GRUB...\\n"
+
+	if [[ "${INSTALL_TYPE}" == "UEFI" ]] ; then
+		grub-install --target=x86_64-efi --efi-directory=/efi || \
+		{
+			printf "\\n\\tError: Failed to install UEFI GRUB.\\n" ;
+			exit 1 ;
+		}
+	elif [[ "${INSTALL_TYPE}" == "LEGACY" ]] ; then
+		grub-install --no-floppy --recheck "${ENTIRE_DISK}" || \
+		{
+			printf "\\n\\tError: Failed to install legacy GRUB.\\n" ;
+			exit 1 ;
+		}
+	fi
+
+	sleep 5 && sync
+
+	printf "\\n\\tDone.\\n"
+}
+
+unmount_all()
+{
+	printf "\\n\\tUnmouting filesystems...\\n"
+
+	if [[ "${INSTALL_TYPE}" == "UEFI" ]] ; then
+		umount "${EFI_PART}" || \
+		{
+			printf "\\n\\tError: Failed to unmount: %s\\n" \
+				"${EFI_PART}" ;
+			exit 1 ;
+		}
+	fi
+
+	# These can fail
+	set +e
+	umount -l "${ROOT_MOUNT}/dev"
+	umount -l "${ROOT_MOUNT}/sys"
+	umount -l "${ROOT_MOUNT}/proc"
+	umount -l "${ROOT_MOUNT}/run"
+	set -e
+
+	umount "${BOOT_PART}" || \
+	{
+		printf "\\n\\tError: Failed to unmount: %s\\n" \
+			"${BOOT_PART}" ;
+		exit 1 ;
+	}
+
+	sleep 5 && sync
+
+	umount "${ROOT_PART}" || \
+	{
+		printf "\\n\\tError: Failed to unmount: %s\\n" \
+			"${ROOT_PART}" ;
+		exit 1 ;
+	}
 }
 
 check_deps
@@ -485,3 +682,10 @@ choose_filesystem
 # format_partitions
 
 # mount_init_filesystems
+
+# TODO
+# install_stage4
+# mount_final_filesystems
+# generate_fstab
+# install_grub
+# unmount_all
