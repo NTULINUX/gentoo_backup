@@ -1,0 +1,24 @@
+#!/sbin/nft -f
+
+flush ruleset
+
+table ip filter {
+	chain incoming {
+		type filter hook input priority 0; policy drop;
+		iif "lo" ip daddr 127.0.0.1 ip saddr 127.0.0.1 accept
+		iif enp24s0 tcp sport { 21, 22, 80, 443, 1194, 6697, 7000, 9418 } ct state established,related accept
+		iif enp24s0 udp sport { 53, 123 } ct state established,related accept
+		log prefix "[nftables] Inbound Denied: " counter drop
+	}
+
+	chain forwarding {
+		type filter hook forward priority 0; policy drop;
+	}
+
+	chain outgoing {
+		type filter hook output priority 0; policy drop;
+		tcp dport { 21, 22, 80, 443, 1194, 6697, 7000, 9418 } ct state new,established,related accept
+		udp dport { 53, 123 } ct state new,established,related accept
+		log prefix "[nftables] Outbound Denied: " counter drop
+	}
+}
