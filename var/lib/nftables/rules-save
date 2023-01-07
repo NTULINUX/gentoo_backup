@@ -1,3 +1,7 @@
+#!/sbin/nft -f
+
+flush ruleset
+
 table ip filter {
 	chain incoming {
 		type filter hook input priority filter; policy drop;
