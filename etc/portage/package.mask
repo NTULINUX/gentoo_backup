@@ -9,6 +9,7 @@
 <=dev-libs/openssl-3.0.7
 gnome-base/gvfs
 net-misc/dropbear
+sys-devel/clang-common::ntu_overlay
 
 # Mask some unstable keywords
 =*/*-*9999*
