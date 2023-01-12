@@ -176,31 +176,6 @@ partuuid_prompt()
 \\t\\tNO/no (default)\\n\\n"
 
 	read -r "USE_PARTUUIDS_ARG" ; printf "\\n"
-
-	if [[ "${USE_PARTUUIDS_ARG}" == "YES" || \
-		"${USE_PARTUUIDS_ARG}" == "yes" ]]
-	then
-		USE_PARTUUIDS="TRUE"
-		printf "\\tUsing PARTUUIDs instead of drive letters.\\n"
-	elif [[ "${USE_PARTUUIDS_ARG}" == "NO" || \
-		"${USE_PARTUUIDS_ARG}" == "no" || \
-		"${USE_PARTUUIDS_ARG}" == "DEFAULT" || \
-		"${USE_PARTUUIDS_ARG}" == "default" || \
-		-z "${USE_PARTUUIDS_ARG}" ]]
-	then
-		USE_PARTUUIDS="FALSE"
-		if [[ "${ENTIRE_DRIVE}" == "/dev/nvme"* ]] ; then
-			printf "\\tUsing: %s instead of PARTUUIDs.\\n" \
-				"${ENTIRE_DRIVE}{p1,p2,p3,p4}"
-		else
-			printf "\\tUsing: %s instead of PARTUUIDs.\\n" \
-				"${ENTIRE_DRIVE}{1,2,3,4}"
-		fi
-	else
-		printf "\\n\\tError: Invalid selection: %s\\n" \
-			"${USE_PARTUUIDS_ARG}"
-		exit 1
-	fi
 }
 
 check_drive()
@@ -266,14 +241,18 @@ check_drive()
 	if [[ "${INSTALL_TYPE}" == "UEFI" ]] ; then
 		removable_prompt
 
-		if [[ "${REMOVABLE_ARG}" == "YES" || \
+		if [[ "${REMOVABLE_ARG}" == "Y" || \
+			"${REMOVABLE_ARG}" == "YES" || \
+			"${REMOVABLE_ARG}" == "y" || \
 			"${REMOVABLE_ARG}" == "yes" ]]
 		then
 			REMOVABLE="TRUE"
 			USE_PARTUUIDS="TRUE"
 			printf "\\t%s: Removable media.
-\\tWill pass \`--removable\` to GRUB installation.\\n" "${ENTIRE_DRIVE}"
-		elif [[ "${REMOVABLE_ARG}" == "NO" || \
+\\tWill pass \`--removable\` to UEFI GRUB installation.\\n" "${ENTIRE_DRIVE}"
+		elif [[ "${REMOVABLE_ARG}" == "N" || \
+			"${REMOVABLE_ARG}" == "NO" || \
+			"${REMOVABLE_ARG}" == "n" || \
 			"${REMOVABLE_ARG}" == "no" || \
 			"${REMOVABLE_ARG}" == "DEFAULT" || \
 			"${REMOVABLE_ARG}" == "default" || \
@@ -281,7 +260,7 @@ check_drive()
 		then
 			REMOVABLE="FALSE"
 			printf "\\t%s: Persistent drive, non-removable.
-\\tUsing standard GRUB installation.\\n" "${ENTIRE_DRIVE}"
+\\tUsing standard UEFI GRUB installation.\\n" "${ENTIRE_DRIVE}"
 		else
 			printf "\\n\\tError: Invalid selection: %s\\n" \
 				"${REMOVABLE_ARG}"
@@ -294,6 +273,35 @@ check_drive()
 
 	if [[ "${REMOVABLE}" == "FALSE" ]] ; then
 		partuuid_prompt
+
+		if [[ "${USE_PARTUUIDS_ARG}" == "Y" || \
+			"${USE_PARTUUIDS_ARG}" == "YES" || \
+			"${USE_PARTUUIDS_ARG}" == "y" || \
+			"${USE_PARTUUIDS_ARG}" == "yes" ]]
+		then
+			USE_PARTUUIDS="TRUE"
+			printf "\\tUsing PARTUUIDs instead of drive letters.\\n"
+		elif [[ "${USE_PARTUUIDS_ARG}" == "N" || \
+			"${USE_PARTUUIDS_ARG}" == "NO" || \
+			"${USE_PARTUUIDS_ARG}" == "n" || \
+			"${USE_PARTUUIDS_ARG}" == "no" || \
+			"${USE_PARTUUIDS_ARG}" == "DEFAULT" || \
+			"${USE_PARTUUIDS_ARG}" == "default" || \
+			-z "${USE_PARTUUIDS_ARG}" ]]
+		then
+			USE_PARTUUIDS="FALSE"
+			if [[ "${ENTIRE_DRIVE}" == "/dev/nvme"* ]] ; then
+				printf "\\tUsing: %s instead of PARTUUIDs.\\n" \
+					"${ENTIRE_DRIVE}{p1,p2,p3,p4}"
+			else
+				printf "\\tUsing: %s instead of PARTUUIDs.\\n" \
+					"${ENTIRE_DRIVE}{1,2,3,4}"
+			fi
+		else
+			printf "\\n\\tError: Invalid selection: %s\\n" \
+				"${USE_PARTUUIDS_ARG}"
+			exit 1
+		fi
 	fi
 }
 
