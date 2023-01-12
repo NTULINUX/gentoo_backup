@@ -117,7 +117,9 @@ legacy_or_uefi()
 		then
 			printf "\\tUEFI Runtime Services are supported.\\n"
 		else
-			printf "\\n\\tError: UEFI Runtime Services not supported.\\n"
+			printf "\\n\\tError: UEFI Runtime Services not supported.
+\\tIf you are using a PREEMPT_RT kernel, you may need to pass: \`efi=runtime\`
+\\ton the kernel command line.\\n"
 			exit 1
 		fi
 	elif [[ -z "${INSTALL_TYPE_ARG}" ]] ; then
@@ -162,6 +164,43 @@ removable_prompt()
 \\t\\tNO/no (default)\\n\\n"
 
 	read -r "REMOVABLE_ARG" ; printf "\\n"
+}
+
+partuuid_prompt()
+{
+	printf "\\n\\tWould you like to use PARTUUIDs anyway?\\n
+\\tThis can help to avoid problems if/when drive letters get swapped around
+\\tbut may cause GRUB and fstab entries to be less human-readable.\\n
+\\tValid options:
+\\t\\tYES/yes
+\\t\\tNO/no (default)\\n\\n"
+
+	read -r "USE_PARTUUIDS_ARG" ; printf "\\n"
+
+	if [[ "${USE_PARTUUIDS_ARG}" == "YES" || \
+		"${USE_PARTUUIDS_ARG}" == "yes" ]]
+	then
+		USE_PARTUUIDS="TRUE"
+		printf "\\tUsing PARTUUIDs instead of drive letters.\\n"
+	elif [[ "${USE_PARTUUIDS_ARG}" == "NO" || \
+		"${USE_PARTUUIDS_ARG}" == "no" || \
+		"${USE_PARTUUIDS_ARG}" == "DEFAULT" || \
+		"${USE_PARTUUIDS_ARG}" == "default" || \
+		-z "${USE_PARTUUIDS_ARG}" ]]
+	then
+		USE_PARTUUIDS="FALSE"
+		if [[ "${ENTIRE_DRIVE}" == "/dev/nvme"* ]] ; then
+			printf "\\tUsing: %s instead of PARTUUIDs.\\n" \
+				"${ENTIRE_DRIVE}{p1,p2,p3,p4}"
+		else
+			printf "\\tUsing: %s instead of PARTUUIDs.\\n" \
+				"${ENTIRE_DRIVE}{1,2,3,4}"
+		fi
+	else
+		printf "\\n\\tError: Invalid selection: %s\\n" \
+			"${USE_PARTUUIDS_ARG}"
+		exit 1
+	fi
 }
 
 check_drive()
@@ -231,6 +270,7 @@ check_drive()
 			"${REMOVABLE_ARG}" == "yes" ]]
 		then
 			REMOVABLE="TRUE"
+			USE_PARTUUIDS="TRUE"
 			printf "\\t%s: Removable media.
 \\tWill pass \`--removable\` to GRUB installation.\\n" "${ENTIRE_DRIVE}"
 		elif [[ "${REMOVABLE_ARG}" == "NO" || \
@@ -243,12 +283,17 @@ check_drive()
 			printf "\\t%s: Persistent drive, non-removable.
 \\tUsing standard GRUB installation.\\n" "${ENTIRE_DRIVE}"
 		else
-			printf "\\n\\tError: Invalid selection: %s\\n" "${REMOVABLE_ARG}"
+			printf "\\n\\tError: Invalid selection: %s\\n" \
+				"${REMOVABLE_ARG}"
 			exit 1
 		fi
 	else
 		REMOVABLE="FALSE"
-		printf "\\n\\tLegacy BIOS selected. Removable media not applicable.\\n"
+		printf "\\n\\tRemovable media not applicable.\\n"
+	fi
+
+	if [[ "${REMOVABLE}" == "FALSE" ]] ; then
+		partuuid_prompt
 	fi
 }
 
@@ -399,33 +444,39 @@ partition_drive()
 	# Required for properly parsing PARTUUIDs, not a bad idea anyway
 	sleep 5 ; sync ; partprobe
 
-	if [[ "${REMOVABLE}" == "TRUE" ]] ; then
-		EFI_PARTUUID=$(lsblk -n -o PARTUUID "${EFI_PART}")
+	if [[ "${USE_PARTUUIDS}" == "TRUE" ]] ; then
+		if [[ "${INSTALL_TYPE}" == "UEFI" ]] ; then
+			EFI_PARTUUID=$(lsblk -n -o PARTUUID "${EFI_PART}")
 
-		# Make sure all PARTUUIDs are valid before proceeding
-		if [[ $(grep -o "-" <<< "${EFI_PARTUUID}" | wc -l) -ne 4 ]] ; then
-			printf "\\n\\tError: Invalid PARTUUID on: %s\\n" "${EFI_PART}"
-			exit 1
+			# Make sure all PARTUUIDs are valid before proceeding
+			if [[ $(grep -o "-" <<< "${EFI_PARTUUID}" | wc -l) -ne 4 ]] ; then
+				printf "\\n\\tError: Invalid PARTUUID on: %s\\n" \
+					"${EFI_PART}"
+				exit 1
+			fi
 		fi
 
 		BOOT_PARTUUID=$(lsblk -n -o PARTUUID "${BOOT_PART}")
 
 		if [[ $(grep -o "-" <<< "${BOOT_PARTUUID}" | wc -l) -ne 4 ]] ; then
-			printf "\\n\\tError: Invalid PARTUUID on: %s\\n" "${BOOT_PART}"
+			printf "\\n\\tError: Invalid PARTUUID on: %s\\n" \
+				"${BOOT_PART}"
 			exit 1
 		fi
 
 		HOME_PARTUUID=$(lsblk -n -o PARTUUID "${HOME_PART}")
 
 		if [[ $(grep -o "-" <<< "${HOME_PARTUUID}" | wc -l) -ne 4 ]] ; then
-			printf "\\n\\tError: Invalid PARTUUID on: %s\\n" "${HOME_PART}"
+			printf "\\n\\tError: Invalid PARTUUID on: %s\\n" \
+				"${HOME_PART}"
 			exit 1
 		fi
 
 		ROOT_PARTUUID=$(lsblk -n -o PARTUUID "${ROOT_PART}")
 
 		if [[ $(grep -o "-" <<< "${ROOT_PARTUUID}" | wc -l) -ne 4 ]] ; then
-			printf "\\n\\tError: Invalid PARTUUID on: %s\\n" "${ROOT_PART}"
+			printf "\\n\\tError: Invalid PARTUUID on: %s\\n" \
+				"${ROOT_PART}"
 			exit 1
 		fi
 	fi
@@ -537,8 +588,11 @@ mount_init_filesystems()
 
 	printf "\\n\\tMounting boot filesystem...\\n"
 
-	# FIXME: WIP: in-progress testing (no stage4 yet)
-	mkdir -p "${ROOT_MOUNT}/boot"
+	mkdir -p "${ROOT_MOUNT}/boot" || \
+	{
+		printf "\\n\\tError: Failed to create: %s\\n" "${ROOT_MOUNT}/boot" ;
+		exit 1 ;
+	}
 
 	mount "${BOOT_PART}" "${ROOT_MOUNT}/boot" || \
 	{
@@ -653,11 +707,25 @@ generate_fstab()
 # See the manpage fstab(5) for more information.
 #\\n" &> "${ROOT_MOUNT}/etc/fstab"
 
-	if [[ "${REMOVABLE}" == "TRUE" ]] ; then
-		printf "# <fs>\\t\\t\\t\\t\\t\\t<mountpoint>\\t<type>\\t<opts>\\t<dump/pass>\\n" \
+	if [[ "${USE_PARTUUIDS}" == "TRUE" ]] ; then
+		printf "# <fs>\\t\\t\\t\\t\\t\\t<mountpoint>\\t<type>\\t<opts>\\t\\t<dump/pass>\\n" \
 			>> "${ROOT_MOUNT}/etc/fstab"
 
-		if [[ "${INSTALL_TYPE}" == "UEFI" && \
+		if [[ "${INSTALL_TYPE}" == "LEGACY" && \
+			"${FSTYPE}" == "EXT4" ]]
+		then
+			printf "%b\\n" \
+"PARTUUID=${BOOT_PARTUUID}\\t/boot\\t\\text4\\tdefaults\\t0\\t2
+PARTUUID=${HOME_PARTUUID}\\t/home\\t\\text4\\tdefaults\\t0\\t2
+PARTUUID=${ROOT_PARTUUID}\\t/\\t\\text4\\tdefaults\\t0\\t1" >> "${ROOT_MOUNT}/etc/fstab"
+		elif [[ "${INSTALL_TYPE}" == "LEGACY" && \
+			"${FSTYPE}" == "XFS" ]]
+		then
+			printf "%b\\n" \
+"PARTUUID=${BOOT_PARTUUID}\\t/boot\\t\\txfs\\tdefaults\\t0\\t2
+PARTUUID=${HOME_PARTUUID}\\t/home\\t\\txfs\\tdefaults\\t0\\t2
+PARTUUID=${ROOT_PARTUUID}\\t/\\t\\txfs\\tdefaults\\t0\\t1" >> "${ROOT_MOUNT}/etc/fstab"
+		elif [[ "${INSTALL_TYPE}" == "UEFI" && \
 			"${FSTYPE}" == "EXT4" ]]
 		then
 			printf "%b\\n" \
@@ -674,11 +742,25 @@ PARTUUID=${BOOT_PARTUUID}\\t/boot\\t\\txfs\\tdefaults\\t0\\t2
 PARTUUID=${HOME_PARTUUID}\\t/home\\t\\txfs\\tdefaults\\t0\\t2
 PARTUUID=${ROOT_PARTUUID}\\t/\\t\\txfs\\tdefaults\\t0\\t1" >> "${ROOT_MOUNT}/etc/fstab"
 		fi
-	elif [[ "${REMOVABLE}" == "FALSE" ]] ; then
-		printf "# <fs>\\t<mountpoint>\\t<type>\\t<opts>\\t<dump/pass>\\n" \
+	elif [[ "${USE_PARTUUIDS}" == "FALSE" ]] ; then
+		printf "# <fs>\\t<mountpoint>\\t<type>\\t<opts>\\t\\t<dump/pass>\\n" \
 			>> "${ROOT_MOUNT}/etc/fstab"
 
-		if [[ "${INSTALL_TYPE}" == "UEFI" && \
+		if [[ "${INSTALL_TYPE}" == "LEGACY" && \
+			"${FSTYPE}" == "EXT4" ]]
+		then
+			printf "%b\\n" \
+"${BOOT_PART}\\t/boot\\text4\\tdefaults\\t0\\t2
+${HOME_PART}\\t/home\\text4\\tdefaults\\t0\\t2
+${ROOT_PART}\\t/\\text4\\tdefaults\\t0\\t1" >> "${ROOT_MOUNT}/etc/fstab"
+		elif [[ "${INSTALL_TYPE}" == "LEGACY" && \
+			"${FSTYPE}" == "XFS" ]]
+		then
+			printf "%b\\n" \
+"${BOOT_PART}\\t/boot\\txfs\\tdefaults\\t0\\t2
+${HOME_PART}\\t/home\\txfs\\tdefaults\\t0\\t2
+${ROOT_PART}\\t/\\txfs\\tdefaults\\t0\\t1" >> "${ROOT_MOUNT}/etc/fstab"
+		elif [[ "${INSTALL_TYPE}" == "UEFI" && \
 			"${FSTYPE}" == "EXT4" ]]
 		then
 			printf "%b\\n" \
@@ -694,20 +776,6 @@ ${ROOT_PART}\\t/\\text4\\tdefaults\\t0\\t1" >> "${ROOT_MOUNT}/etc/fstab"
 ${BOOT_PART}\\t/boot\\txfs\\tdefaults\\t0\\t2
 ${HOME_PART}\\t/home\\txfs\\tdefaults\\t0\\t2
 ${ROOT_PART}\\t/\\txfs\\tdefaults\\t0\\t1" >> "${ROOT_MOUNT}/etc/fstab"
-		elif [[ "${INSTALL_TYPE}" == "LEGACY" && \
-			"${FSTYPE}" == "EXT4" ]]
-		then
-			printf "%b\\n" \
-"${BOOT_PART}\\t/boot\\text4\\tdefaults\\t0\\t2
-${HOME_PART}\\t/home\\text4\\tdefaults\\t0\\t2
-${ROOT_PART}\\t/\\text4\\tdefaults\\t0\\t1" >> "${ROOT_MOUNT}/etc/fstab"
-		elif [[ "${INSTALL_TYPE}" == "LEGACY" && \
-			"${FSTYPE}" == "XFS" ]]
-		then
-			printf "%b\\n" \
-"${BOOT_PART}\\t/boot\\txfs\\tdefaults\\t0\\t2
-${HOME_PART}\\t/home\\txfs\\tdefaults\\t0\\t2
-${ROOT_PART}\\t/\\txfs\\tdefaults\\t0\\t1" >> "${ROOT_MOUNT}/etc/fstab"
 		fi
 	fi
 }
@@ -717,16 +785,26 @@ install_grub()
 	# TODO: chroot necessary for this to work
 	printf "\\n\\tInstalling GRUB...\\n"
 
-	if [[ "${INSTALL_TYPE}" == "UEFI" ]] ; then
+	if [[ "${INSTALL_TYPE}" == "LEGACY" ]] ; then
+		grub-install --no-floppy --recheck "${ENTIRE_DISK}" || \
+		{
+			printf "\\n\\tError: Failed to install legacy GRUB.\\n" ;
+			exit 1 ;
+		}
+	elif [[ "${INSTALL_TYPE}" == "UEFI" && \
+		"${REMOVABLE}" == "FALSE" ]]
+	then
 		grub-install --target=x86_64-efi --efi-directory=/efi || \
 		{
 			printf "\\n\\tError: Failed to install UEFI GRUB.\\n" ;
 			exit 1 ;
 		}
-	elif [[ "${INSTALL_TYPE}" == "LEGACY" ]] ; then
-		grub-install --no-floppy --recheck "${ENTIRE_DISK}" || \
+	elif [[ "${INSTALL_TYPE}" == "UEFI" && \
+		"${REMOVABLE}" == "TRUE" ]]
+	then
+		grub-install --target=x86_64-efi --efi-directory=/efi --removable || \
 		{
-			printf "\\n\\tError: Failed to install legacy GRUB.\\n" ;
+			printf "\\n\\tError: Failed to install UEFI GRUB (--removable)\\n" ;
 			exit 1 ;
 		}
 	fi
