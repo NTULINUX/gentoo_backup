@@ -6,7 +6,7 @@
 */*-bin
 */*pulseaudio*
 */*systemd*
-<dev-libs/openssl-3.0.7
+<=dev-libs/openssl-3.0.7
 gnome-base/gvfs
 net-misc/dropbear
 

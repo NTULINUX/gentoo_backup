@@ -20,7 +20,7 @@ dev-qt/qtwebengine widgets
 kde-frameworks/kfilemetadata taglib
 lxqt-base/lxqt-meta terminal
 media-gfx/fontforge -X
-media-gfx/inkscape jpeg graphicsmagick postscript svg2
+media-gfx/inkscape jpeg postscript svg2
 media-libs/babl lcms
 media-libs/gegl cairo lcms
 media-libs/libcanberra -udev
@@ -33,7 +33,7 @@ sys-auth/pambase minimal
 sys-auth/polkit daemon
 sys-boot/grub -fonts -themes -truetype
 sys-devel/clang-runtime sanitize
-sys-devel/gcc -jit
+sys-devel/gcc -jit vanilla
 sys-fs/cryptsetup -gcrypt -openssl nettle
 sys-fs/udisks -elogind
 sys-libs/compiler-rt-sanitizers -asan -cfi -dfsan -gwp-asan -hwasan -libfuzzer -lsan -memprof -msan -orc -safestack -scudo -tsan -ubsan -xray
