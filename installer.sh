@@ -19,9 +19,196 @@ fi
 
 ROOT_MOUNT="/mnt/gentoo-cnc"
 
+# Put version checks into their own section for ease of maintenance
+btrfs_ver()
+{
+	BTRFS_MAJOR_VER=$(mkfs.btrfs -V | grep -o "[0-9]" | sed -n '1p')
+	BTRFS_MINOR_VER=$(mkfs.btrfs -V | grep -o "[0-9]" | sed -n '2p')
+	BTRFS_PATCH_VER=$(mkfs.btrfs -V | grep -o "[0-9]" | sed -n '3p')
+
+	if [[ "${BTRFS_MAJOR_VER}" -lt 5 || \
+		"${BTRFS_MAJOR_VER}" -eq 5 && \
+		"${BTRFS_MINOR_VER}" -lt 15 || \
+		"${BTRFS_MINOR_VER}" -eq 15 && \
+		"${BTRFS_PATCH_VER}" -lt 1 ]]
+	then
+		printf "\\n\\tError: btfrs-progs must be 5.15.1 or newer.\\n"
+		exit 1
+	else
+		printf "\\tbtrfs-progs version: %s\\n" \
+			"${BTRFS_MAJOR_VER}.${BTRFS_MINOR_VER}.${BTRFS_PATCH_VER}"
+	fi
+}
+
+f2fs_ver()
+{
+	F2FS_MAJOR_VER=$(mkfs.f2fs -V | cut -d ' ' -f2 | cut -d '.' -f1)
+	F2FS_MINOR_VER=$(mkfs.f2fs -V | cut -d ' ' -f2 | cut -d '.' -f2)
+
+	if [[ "${F2FS_MAJOR_VER}" -lt 1 || \
+		"${F2FS_MAJOR_VER}" -eq 1 && \
+		"${F2FS_MINOR_VER}" -lt 15 ]]
+	then
+		printf "\\n\\tError: f2fs-tools must be 1.15.0 or newer.\\n"
+		exit 1
+	else
+		printf "\\tf2fs-progs version: %s\\n" \
+			"${F2FS_MAJOR_VER}.${F2FS_MINOR_VER}"
+	fi
+}
+
+# TODO: Add max kernel version once deployed in Gentoo image
+# Linux kernel cannot be newer than one in image (PREEMPT_RT) if F2FS is used
+linux_ver()
+{
+	LINUX_MAJOR_VER=$(uname -r | cut -d '.' -f1)
+	LINUX_MINOR_VER=$(uname -r | cut -d '.' -f2)
+	LINUX_PATCH_VER=$(uname -r | cut -d '.' -f3)
+
+	if [[ "${LINUX_MAJOR_VER}" -lt 5 || \
+		"${LINUX_MAJOR_VER}" -eq 5 && \
+		"${LINUX_MINOR_VER}" -lt 15 || \
+		"${LINUX_MAJOR_VER}" -eq 5 && \
+		"${LINUX_MINOR_VER}" -eq 15 && \
+		"${LINUX_PATCH_VER}" -lt 83 ]]
+	then
+		printf "\\n\\tError: Linux kernel version must be newer than 5.15.83.\\n"
+		exit 1
+	else
+		printf "\\tLinux kernel version: %s\\n" \
+		"${LINUX_MAJOR_VER}.${LINUX_MINOR_VER}.${LINUX_PATCH_VER}"
+	fi
+}
+
+linux_config_check()
+{
+	BTRFS_OPTIONS="
+		BTRFS_FS
+		BTRFS_FS_POSIX_ACL
+	"
+
+	EXT4_OPTIONS="
+		EXT4_FS
+		EXT4_FS_POSIX_ACL
+	"
+
+	F2FS_OPTIONS="
+		F2FS_FS
+		F2FS_FS_XATTR
+		F2FS_FS_POSIX_ACL
+	"
+
+	XFS_OPTIONS="
+		XFS_FS
+		XFS_POSIX_ACL
+	"
+
+	mapfile -s 1 -t BTRFS_STRINGS < <(printf "%s" "${BTRFS_OPTIONS}" | \
+		sed -e 's/\t//g' -e '$d')
+
+	mapfile -s 1 -t EXT4_STRINGS < <(printf "%s" "${EXT4_OPTIONS}" | \
+		sed -e 's/\t//g' -e '$d')
+
+	mapfile -s 1 -t F2FS_STRINGS < <(printf "%s" "${F2FS_OPTIONS}" | \
+		sed -e 's/\t//g' -e '$d')
+
+	mapfile -s 1 -t XFS_STRINGS < <(printf "%s" "${XFS_OPTIONS}" | \
+		sed -e 's/\t//g' -e '$d')
+
+	if [[ -r "${KCONFIG}" ]] ; then
+		# Throw all errors first before exiting
+		set +e
+
+		for (( i=0 ; i<"${#BTRFS_STRINGS[@]}" ; i++ )) ; do
+			if ! zgrep "CONFIG_${BTRFS_STRINGS[$i]}=m" \
+				"${KCONFIG}" >> /dev/null 2>&1 && \
+			! zgrep "CONFIG_${BTRFS_STRINGS[$i]}=y" \
+				"${KCONFIG}" >> /dev/null 2>&1
+			then
+				printf "\\n\\tError: %s is not set.\\n" \
+					"CONFIG_${BTRFS_STRINGS[$i]}"
+				BTRFS_ERROR_THROWN=1
+			else
+				BTRFS_ERROR_THROWN=0
+			fi
+		done
+
+		for (( i=0 ; i<"${#EXT4_STRINGS[@]}" ; i++ )) ; do
+			if ! zgrep "CONFIG_${EXT4_STRINGS[$i]}=m" \
+				"${KCONFIG}"  >> /dev/null 2>&1 && \
+			! zgrep "CONFIG_${EXT4_STRINGS[$i]}=y" \
+				"${KCONFIG}" >> /dev/null 2>&1
+			then
+				printf "\\n\\tError: %s is not set.\\n" \
+					"CONFIG_${EXT4_STRINGS[$i]}"
+				EXT4_ERROR_THROWN=1
+			else
+				EXT4_ERROR_THROWN=0
+			fi
+		done
+
+		for (( i=0 ; i<"${#F2FS_STRINGS[@]}" ; i++ )) ; do
+			if ! zgrep "CONFIG_${F2FS_STRINGS[$i]}=m" \
+				"${KCONFIG}" >> /dev/null 2>&1 && \
+			! zgrep "CONFIG_${F2FS_STRINGS[$i]}=y" \
+				"${KCONFIG}" >> /dev/null 2>&1
+			then
+				printf "\\n\\tError: %s is not set.\\n" \
+					"CONFIG_${F2FS_STRINGS[$i]}"
+				F2FS_ERROR_THROWN=1
+			else
+				F2FS_ERROR_THROWN=0
+			fi
+		done
+		
+		for (( i=0 ; i<"${#XFS_STRINGS[@]}" ; i++ )) ; do
+			if ! zgrep "CONFIG_${XFS_STRINGS[$i]}=m" \
+				"${KCONFIG}" >> /dev/null 2>&1 && \
+			! zgrep "CONFIG_${XFS_STRINGS[$i]}=y" \
+				"${KCONFIG}" >> /dev/null 2>&1
+			then
+				printf "\\n\\tError: %s is not set.\\n" \
+					"CONFIG_${XFS_STRINGS[$i]}"
+				XFS_ERROR_THROWN=1
+			else
+				XFS_ERROR_THROWN=0
+			fi
+		done
+
+		set -e
+
+		printf "\\n"
+	fi
+}
+
 check_deps()
 {
-	printf "\\n\\tChecking dependencies...\\n"
+	printf "\\n\\tChecking dependencies...\\n\\n"
+
+	# This is necessary to ensure we don't create a BTRFS or F2FS filesystem
+	# with an ancient kernel, but also that the kernel is not newer than that
+	# used to mount the F2FS filesystem (the PREEMPT_RT kernel) For more info:
+	# https://bugzilla.opensuse.org/show_bug.cgi?id=1109665#c0
+	printf "\\tChecking Linux kernel version...\\n" ; linux_ver
+
+	if [[ -r "/proc/config.gz" ]] ; then
+		KCONFIG="/proc/config.gz"
+
+		printf "\\tCurrent kernel configuration found.
+\\tEnsuring Linux kernel has proper filesystem support...\\n"
+
+		linux_config_check
+
+		if [[ "${BTRFS_ERROR_THROWN}" -eq 1 || \
+			"${EXT4_ERROR_THROWN}" -eq 1 || \
+			"${F2FS_ERROR_THROWN}" -eq 1 || \
+			"${XFS_ERROR_THROWN}" -eq 1 ]]
+		then
+			# FIXME: WIP
+			# exit 1
+			return 0
+		fi
+	fi
 
 	type mkfs.ext4 >> /dev/null 2>&1 || \
 	{
@@ -34,6 +221,18 @@ check_deps()
 		printf "\\n\\tError: xfsprogs not installed.\\n" ;
 		exit 1 ;
 	}
+
+	type mkfs.btrfs >> /dev/null 2>&1 || \
+	{
+		printf "\\n\\tError: btrfs-progs not installed.\\n" ;
+		exit 1 ;
+	} ; printf "\\tChecking version of btrfs-progs...\\n" ; btrfs_ver
+
+	type mkfs.f2fs >> /dev/null 2>&1 || \
+	{
+		printf "\\n\\tError: f2fs-tools not installed.\\n" ;
+		exit 1 ;
+	} ; printf "\\tChecking version of f2fs-tools...\\n" ; f2fs_ver
 
 	type mkfs.fat >> /dev/null 2>&1 || \
 	{
@@ -494,22 +693,45 @@ partition_drive()
 
 choose_filesystem()
 {
-	printf "\\n\\tPlease select either EXT4 or XFS.
-\\tFor NVMe, XFS is recommended (I think...)\\n
+	printf "\\n\\tPlease select your choice of filesystem.
+\\tFor NVMe and SSDs, F2FS may give best performance.\\n
 \\tValid options:
-\\t\\tEXT4/ext4
+\\t\\tBTRFS/btrfs
+\\t\\tEXT4/ext4 (default for non-NVMe drives)
+\\t\\tF2FS/f2fs (default for NVMe drives)
 \\t\\tXFS/xfs\\n\\n"
 
 	read -r "FSTYPE_ARG"
 
-	if [[ "${FSTYPE_ARG}" == "EXT4" || \
+	if [[ "${FSTYPE_ARG}" == "BTRFS" || \
+		"${FSTYPE_ARG}" == "btrfs" ]]
+	then
+		FSTYPE="BTRFS"
+	elif [[ "${FSTYPE_ARG}" == "EXT4" || \
 		"${FSTYPE_ARG}" == "ext4" ]]
 	then
 		FSTYPE="EXT4"
+	elif [[ "${FSTYPE_ARG}" == "F2FS" || \
+		"${FSTYPE_ARG}" == "f2fs" ]]
+	then
+		FSTYPE="F2FS"
 	elif [[ "${FSTYPE_ARG}" == "XFS" || \
 		"${FSTYPE_ARG}" == "xfs" ]]
 	then
 		FSTYPE="XFS"
+	elif [[ "${FSTYPE_ARG}" == "DEFAULT" && \
+		"${ENTIRE_DRIVE}" == "/dev/nvme"* || \
+		"${FSTYPE_ARG}" == "default" && \
+		"${ENTIRE_DRIVE}" == "/dev/nvme"* || \
+		"${ENTIRE_DRIVE}" == "/dev/nvme"* && \
+		-z "${FSTYPE_ARG}" ]]
+	then
+		FSTYPE="F2FS"
+	elif [[ "${FSTYPE_ARG}" == "DEFAULT" || \
+		"${FSTYPE_ARG}" == "default" || \
+		-z "${FSTYPE_ARG}" ]]
+	then
+		FSTYPE="EXT4"
 	else
 		printf "\\n\\tError: Invalid selection: %s\\n" "${FSTYPE_ARG}"
 		exit 1
@@ -527,10 +749,21 @@ format_partitions()
 		mkfs.fat -F 32 "${EFI_PART}"
 	fi
 
-	if [[ "${FSTYPE}" == "EXT4" ]] ; then
+	if [[ "${FSTYPE}" == "BTRFS" ]] ; then
+		mkfs.btrfs "${BOOT_PART}"
+		mkfs.btrfs "${HOME_PART}"
+		mkfs.btrfs "${ROOT_PART}"
+	elif [[ "${FSTYPE}" == "EXT4" ]] ; then
 		mkfs.ext4 "${BOOT_PART}"
 		mkfs.ext4 "${HOME_PART}"
 		mkfs.ext4 "${ROOT_PART}"
+	elif [[ "${FSTYPE}" == "F2FS" ]] ; then
+		printf "\\tF2FS selected. Using safe defaults...\\n"
+		# F2FS xattr currently not supported in GRUB, exclude only for /boot
+		# (no compression)
+		mkfs.f2fs "${BOOT_PART}"
+		mkfs.f2fs -O extra_attr,inode_checksum,sb_checksum "${HOME_PART}"
+		mkfs.f2fs -O extra_attr,inode_checksum,sb_checksum "${ROOT_PART}"
 	elif [[ "${FSTYPE}" == "XFS" ]] ; then
 		mkfs.xfs "${BOOT_PART}"
 		mkfs.xfs "${HOME_PART}"
@@ -633,7 +866,21 @@ mount_final_filesystems()
 {
 	printf "\\n\\tMounting final filesystems for GRUB installation...\\n"
 
-	if [[ "${INSTALL_TYPE}" == "UEFI" ]] ; then
+	if [[ "${INSTALL_TYPE}" == "LEGACY" ]] ; then
+		mount --bind "/dev" "${ROOT_MOUNT}/dev" || \
+		{
+			printf "\\n\\tError: Failed to mount: %s to: %s\\n" \
+				"/dev" "${ROOT_MOUNT}/dev" ;
+			exit 1 ;
+		}
+
+		mount --bind "/sys" "${ROOT_MOUNT}/sys" || \
+		{
+			printf "\\n\\tError: Failed to mount: %s to: %s\\n" \
+				"/sys" "${ROOT_MOUNT}/sys" ;
+			exit 1 ;
+		}
+	elif [[ "${INSTALL_TYPE}" == "UEFI" ]] ; then
 		mkdir -p "${ROOT_MOUNT}/efi" || \
 		{
 			printf "\\n\\tError: Failed to create: %s\\n" \
@@ -656,20 +903,6 @@ mount_final_filesystems()
 		}
 
 		mount --rbind "/sys" "${ROOT_MOUNT}/sys" || \
-		{
-			printf "\\n\\tError: Failed to mount: %s to: %s\\n" \
-				"/sys" "${ROOT_MOUNT}/sys" ;
-			exit 1 ;
-		}
-	elif [[ "${INSTALL_TYPE}" == "LEGACY" ]] ; then
-		mount --bind "/dev" "${ROOT_MOUNT}/dev" || \
-		{
-			printf "\\n\\tError: Failed to mount: %s to: %s\\n" \
-				"/dev" "${ROOT_MOUNT}/dev" ;
-			exit 1 ;
-		}
-
-		mount --bind "/sys" "${ROOT_MOUNT}/sys" || \
 		{
 			printf "\\n\\tError: Failed to mount: %s to: %s\\n" \
 				"/sys" "${ROOT_MOUNT}/sys" ;
@@ -698,16 +931,18 @@ generate_fstab()
 {
 	printf "\\n\\tGenerating fstab file...\\n"
 
+	# Safe defaults for F2FS (no compression)
+	if [[ "${FSTYPE}" == "F2FS" ]] ; then
+		F2FS_MOUNT_OPTS="atgc,gc_merge,lazytime"
+	fi
+
 	# FIXME: WIP: in-progress testing (no stage4 yet)
 	mkdir -p "${ROOT_MOUNT}/etc"
 
 	printf "%b\\n" \
 "# /etc/fstab: static file system information.
 #
-# noatime turns off atimes for increased performance (atimes normally aren't 
-# needed); notail increases performance of ReiserFS (at the expense of storage 
-# efficiency).  It's safe to drop the noatime options if you want and to 
-# switch between notail / tail freely.
+# noatime turns off atimes for increased performance.
 #
 # The root filesystem should have a pass number of either 0 or 1.
 # All other filesystems should have a pass number of 0 or greater than 1.
@@ -716,23 +951,62 @@ generate_fstab()
 #\\n" &> "${ROOT_MOUNT}/etc/fstab"
 
 	if [[ "${USE_PARTUUIDS}" == "TRUE" ]] ; then
-		printf "# <fs>\\t\\t\\t\\t\\t\\t<mountpoint>\\t<type>\\t<opts>\\t\\t<dump/pass>\\n" \
+		printf "%b\\n" \
+"# <fs>\\t\\t\\t\\t\\t\\t<mountpoint>\\t<type>\\t<opts>\\t\\t<dump/pass>" \
 			>> "${ROOT_MOUNT}/etc/fstab"
 
+		# PARTUUIDs + LEGACY + BTRFS
 		if [[ "${INSTALL_TYPE}" == "LEGACY" && \
+			"${FSTYPE}" == "BTRFS" ]]
+		then
+			printf "%b\\n" \
+"PARTUUID=${BOOT_PARTUUID}\\t/boot\\t\\tbtrfs\\tdefaults\\t0\\t2
+PARTUUID=${HOME_PARTUUID}\\t/home\\t\\tbtrfs\\tdefaults\\t0\\t2
+PARTUUID=${ROOT_PARTUUID}\\t/\\t\\tbtrfs\\tdefaults\\t0\\t1" \
+	>> "${ROOT_MOUNT}/etc/fstab"
+
+		# PARTUUIDs + LEGACY + EXT4
+		elif [[ "${INSTALL_TYPE}" == "LEGACY" && \
 			"${FSTYPE}" == "EXT4" ]]
 		then
 			printf "%b\\n" \
 "PARTUUID=${BOOT_PARTUUID}\\t/boot\\t\\text4\\tdefaults\\t0\\t2
 PARTUUID=${HOME_PARTUUID}\\t/home\\t\\text4\\tdefaults\\t0\\t2
-PARTUUID=${ROOT_PARTUUID}\\t/\\t\\text4\\tdefaults\\t0\\t1" >> "${ROOT_MOUNT}/etc/fstab"
+PARTUUID=${ROOT_PARTUUID}\\t/\\t\\text4\\tdefaults\\t0\\t1" \
+	>> "${ROOT_MOUNT}/etc/fstab"
+
+		# PARTUUIDs + LEGACY + F2FS
+		elif [[ "${INSTALL_TYPE}" == "LEGACY" && \
+			"${FSTYPE}" == "F2FS" ]]
+		then
+			printf "%b\\n" \
+"PARTUUID=${BOOT_PARTUUID}\\t/boot\\t\\tf2fs\\t${F2FS_MOUNT_OPTS}\\t0\\t2
+PARTUUID=${HOME_PARTUUID}\\t/home\\t\\tf2fs\\t${F2FS_MOUNT_OPTS}\\t0\\t2
+PARTUUID=${ROOT_PARTUUID}\\t/\\t\\tf2fs\\t${F2FS_MOUNT_OPTS}\\t0\\t1" \
+	>> "${ROOT_MOUNT}/etc/fstab"
+
+		# PARTUUIDs + LEGACY + XFS
 		elif [[ "${INSTALL_TYPE}" == "LEGACY" && \
 			"${FSTYPE}" == "XFS" ]]
 		then
 			printf "%b\\n" \
 "PARTUUID=${BOOT_PARTUUID}\\t/boot\\t\\txfs\\tdefaults\\t0\\t2
 PARTUUID=${HOME_PARTUUID}\\t/home\\t\\txfs\\tdefaults\\t0\\t2
-PARTUUID=${ROOT_PARTUUID}\\t/\\t\\txfs\\tdefaults\\t0\\t1" >> "${ROOT_MOUNT}/etc/fstab"
+PARTUUID=${ROOT_PARTUUID}\\t/\\t\\txfs\\tdefaults\\t0\\t1" \
+	>> "${ROOT_MOUNT}/etc/fstab"
+
+		# PARTUUIDs + UEFI + BTRFS
+		elif [[ "${INSTALL_TYPE}" == "UEFI" && \
+			"${FSTYPE}" == "BTRFS" ]]
+		then
+			printf "%b\\n" \
+"PARTUUID=${EFI_PARTUUID}\\t/efi\\t\\tvfat\\tdefaults\\t0\\t2
+PARTUUID=${BOOT_PARTUUID}\\t/boot\\t\\tbtrfs\\tdefaults\\t0\\t2
+PARTUUID=${HOME_PARTUUID}\\t/home\\t\\tbtrfs\\tdefaults\\t0\\t2
+PARTUUID=${ROOT_PARTUUID}\\t/\\t\\tbtrfs\\tdefaults\\t0\\t1" \
+	>> "${ROOT_MOUNT}/etc/fstab"
+
+		# PARTUUIDs + UEFI + EXT4
 		elif [[ "${INSTALL_TYPE}" == "UEFI" && \
 			"${FSTYPE}" == "EXT4" ]]
 		then
@@ -740,7 +1014,21 @@ PARTUUID=${ROOT_PARTUUID}\\t/\\t\\txfs\\tdefaults\\t0\\t1" >> "${ROOT_MOUNT}/etc
 "PARTUUID=${EFI_PARTUUID}\\t/efi\\t\\tvfat\\tdefaults\\t0\\t2
 PARTUUID=${BOOT_PARTUUID}\\t/boot\\t\\text4\\tdefaults\\t0\\t2
 PARTUUID=${HOME_PARTUUID}\\t/home\\t\\text4\\tdefaults\\t0\\t2
-PARTUUID=${ROOT_PARTUUID}\\t/\\t\\text4\\tdefaults\\t0\\t1" >> "${ROOT_MOUNT}/etc/fstab"
+PARTUUID=${ROOT_PARTUUID}\\t/\\t\\text4\\tdefaults\\t0\\t1" \
+	>> "${ROOT_MOUNT}/etc/fstab"
+
+		# PARTUUIDs + UEFI + F2FS
+		elif [[ "${INSTALL_TYPE}" == "UEFI" && \
+			"${FSTYPE}" == "F2FS" ]]
+		then
+			printf "%b\\n" \
+"PARTUUID=${EFI_PARTUUID}\\t/efi\\t\\tvfat\\tdefaults\\t0\\t2
+PARTUUID=${BOOT_PARTUUID}\\t/boot\\t\\tf2fs\\t${F2FS_MOUNT_OPTS}\\t0\\t2
+PARTUUID=${HOME_PARTUUID}\\t/home\\t\\tf2fs\\t${F2FS_MOUNT_OPTS}\\t0\\t2
+PARTUUID=${ROOT_PARTUUID}\\t/\\t\\tf2fs\\t${F2FS_MOUNT_OPTS}\\t0\\t1" \
+	>> "${ROOT_MOUNT}/etc/fstab"
+
+		# PARTUUIDs + UEFI + XFS
 		elif [[ "${INSTALL_TYPE}" == "UEFI" && \
 			"${FSTYPE}" == "XFS" ]]
 		then
@@ -748,19 +1036,43 @@ PARTUUID=${ROOT_PARTUUID}\\t/\\t\\text4\\tdefaults\\t0\\t1" >> "${ROOT_MOUNT}/et
 "PARTUUID=${EFI_PARTUUID}\\t/efi\\t\\tvfat\\tdefaults\\t0\\t2
 PARTUUID=${BOOT_PARTUUID}\\t/boot\\t\\txfs\\tdefaults\\t0\\t2
 PARTUUID=${HOME_PARTUUID}\\t/home\\t\\txfs\\tdefaults\\t0\\t2
-PARTUUID=${ROOT_PARTUUID}\\t/\\t\\txfs\\tdefaults\\t0\\t1" >> "${ROOT_MOUNT}/etc/fstab"
+PARTUUID=${ROOT_PARTUUID}\\t/\\t\\txfs\\tdefaults\\t0\\t1" \
+	>> "${ROOT_MOUNT}/etc/fstab"
 		fi
+
 	elif [[ "${USE_PARTUUIDS}" == "FALSE" ]] ; then
-		printf "# <fs>\\t<mountpoint>\\t<type>\\t<opts>\\t\\t<dump/pass>\\n" \
+		printf "%b\\n" \
+"# <fs>\\t\\t<mountpoint>\\t<type>\\t<opts>\\t\\t<dump/pass>" \
 			>> "${ROOT_MOUNT}/etc/fstab"
 
+		# LEGACY + BTRFS (no PARTUUIDs)
 		if [[ "${INSTALL_TYPE}" == "LEGACY" && \
+			"${FSTYPE}" == "BTRFS" ]]
+		then
+			printf "%b\\n" \
+"${BOOT_PART}\\t/boot\\tbtrfs\\tdefaults\\t0\\t2
+${HOME_PART}\\t/home\\tbtrfs\\tdefaults\\t0\\t2
+${ROOT_PART}\\t/\\tbtrfs\\tdefaults\\t0\\t1" >> "${ROOT_MOUNT}/etc/fstab"
+
+		# LEGACY + EXT4 (no PARTUUIDs)
+		elif [[ "${INSTALL_TYPE}" == "LEGACY" && \
 			"${FSTYPE}" == "EXT4" ]]
 		then
 			printf "%b\\n" \
 "${BOOT_PART}\\t/boot\\text4\\tdefaults\\t0\\t2
 ${HOME_PART}\\t/home\\text4\\tdefaults\\t0\\t2
 ${ROOT_PART}\\t/\\text4\\tdefaults\\t0\\t1" >> "${ROOT_MOUNT}/etc/fstab"
+
+		# LEGACY + F2FS (no PARTUUIDs)
+		elif [[ "${INSTALL_TYPE}" == "LEGACY" && \
+			"${FSTYPE}" == "F2FS" ]]
+		then
+			printf "%b\\n" \
+"${BOOT_PART}\\t/boot\\tf2fs\\t${F2FS_MOUNT_OPTS}\\t0\\t2
+${HOME_PART}\\t/home\\tf2fs\\t${F2FS_MOUNT_OPTS}\\t0\\t2
+${ROOT_PART}\\t/\\tf2fs\\t${F2FS_MOUNT_OPTS}\\t0\\t1" >> "${ROOT_MOUNT}/etc/fstab"
+
+		# LEGACY + XFS (no PARTUUIDs)
 		elif [[ "${INSTALL_TYPE}" == "LEGACY" && \
 			"${FSTYPE}" == "XFS" ]]
 		then
@@ -768,6 +1080,18 @@ ${ROOT_PART}\\t/\\text4\\tdefaults\\t0\\t1" >> "${ROOT_MOUNT}/etc/fstab"
 "${BOOT_PART}\\t/boot\\txfs\\tdefaults\\t0\\t2
 ${HOME_PART}\\t/home\\txfs\\tdefaults\\t0\\t2
 ${ROOT_PART}\\t/\\txfs\\tdefaults\\t0\\t1" >> "${ROOT_MOUNT}/etc/fstab"
+
+		# UEFI + BTRFS (no PARTUUIDs)
+		elif [[ "${INSTALL_TYPE}" == "UEFI" && \
+			"${FSTYPE}" == "BTRFS" ]]
+		then
+			printf "%b\\n" \
+"${EFI_PART}\\t/efi\\tvfat\\tdefaults\\t0\\t2
+${BOOT_PART}\\t/boot\\tbtrfs\\tdefaults\\t0\\t2
+${HOME_PART}\\t/home\\tbtrfs\\tdefaults\\t0\\t2
+${ROOT_PART}\\t/\\tbtrfs\\tdefaults\\t0\\t1" >> "${ROOT_MOUNT}/etc/fstab"
+
+		# UEFI + EXT4 (no PARTUUIDs)
 		elif [[ "${INSTALL_TYPE}" == "UEFI" && \
 			"${FSTYPE}" == "EXT4" ]]
 		then
@@ -776,6 +1100,18 @@ ${ROOT_PART}\\t/\\txfs\\tdefaults\\t0\\t1" >> "${ROOT_MOUNT}/etc/fstab"
 ${BOOT_PART}\\t/boot\\text4\\tdefaults\\t0\\t2
 ${HOME_PART}\\t/home\\text4\\tdefaults\\t0\\t2
 ${ROOT_PART}\\t/\\text4\\tdefaults\\t0\\t1" >> "${ROOT_MOUNT}/etc/fstab"
+
+		# UEFI + F2FS (no PARTUUIDs)
+		elif [[ "${INSTALL_TYPE}" == "UEFI" && \
+			"${FSTYPE}" == "F2FS" ]]
+		then
+			printf "%b\\n" \
+"${EFI_PART}\\t/efi\\tvfat\\tdefaults\\t0\\t2
+${BOOT_PART}\\t/boot\\tf2fs\\t${F2FS_MOUNT_OPTS}\\t0\\t2
+${HOME_PART}\\t/home\\tf2fs\\t${F2FS_MOUNT_OPTS}\\t0\\t2
+${ROOT_PART}\\t/\\tf2fs\\t${F2FS_MOUNT_OPTS}\\t0\\t1" >> "${ROOT_MOUNT}/etc/fstab"
+
+		# UEFI + XFS (no PARTUUIDs)
 		elif [[ "${INSTALL_TYPE}" == "UEFI" && \
 			"${FSTYPE}" == "XFS" ]]
 		then
@@ -827,6 +1163,21 @@ unmount_all()
 	printf "\\n\\tUnmouting filesystems...\\n"
 
 	if [[ "${INSTALL_TYPE}" == "UEFI" ]] ; then
+		# FIXME: WIP (testing)
+		mkdir -p "${ROOT_MOUNT}/efi" || \
+		{
+			printf "\\n\\tError: Failed to create: %s\\n" \
+				"${ROOT_MOUNT}/efi" ;
+			exit 1 ;
+		}
+
+		mount "${EFI_PART}" "${ROOT_MOUNT}/efi" || \
+		{
+			printf "\\n\\tError: Failed to mount: %s to: %s\\n" \
+				"${EFI_PART}" "${ROOT_MOUNT}/efi" ;
+			exit 1 ;
+		}
+
 		umount "${EFI_PART}" || \
 		{
 			printf "\\n\\tError: Failed to unmount: %s\\n" \
@@ -858,6 +1209,22 @@ unmount_all()
 			"${ROOT_PART}" ;
 		exit 1 ;
 	}
+
+	printf "\\n\\tDone.\\n"
+}
+
+cleanup()
+{
+	printf "\\n\\tCleaning up...\\n"
+
+	rm -d "${ROOT_MOUNT}" || \
+	{
+		printf "\\n\\tError: Failed to remove non-empty directory: %s\\n" \
+			"${ROOT_MOUNT}"
+		exit 1
+	}
+
+	printf "\\n\\tDone.\\n"
 }
 
 check_deps
@@ -886,4 +1253,7 @@ generate_fstab
 
 # More TODO
 # install_grub
-# unmount_all
+
+unmount_all
+
+cleanup
