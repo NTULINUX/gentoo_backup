@@ -19,14 +19,14 @@ X86_64_V2="
 
 mapfile -s 1 -t FLAGS < <(printf "%s" "${X86_64_V2}" | sed 's/\t//g')
 
-for (( i=0 ; i<"${#FLAGS[@]}" ; i++ )) ; do
+for (( i=0 ; i < "${#FLAGS[@]}" ; i++ )) ; do
 	printf "\\tChecking for: %s\\n" "${FLAGS[$i]}"
 
 	lscpu | grep "${FLAGS[$i]}" >> /dev/null 2>&1 || \
-		{
-			printf "\\tERROR: Missing: %s\\n" "${FLAGS[$i]}" ;
-			exit 1 ;
-		}
+	{
+		printf "\\tERROR: Missing: %s\\n" "${FLAGS[$i]}" ;
+		exit 1 ;
+	}
 done
 
 printf "\\n\\tDone. Your processor is x86-64-v2 or newer.\\n"
