@@ -65,6 +65,7 @@ linux_ver()
 	LINUX_MINOR_VER=$(uname -r | cut -d '.' -f2)
 	LINUX_PATCH_VER=$(uname -r | cut -d '.' -f3)
 
+	# SystemRescue 9.06 uses Linux 5.15.83 (ideal work environment)
 	if [[ "${LINUX_MAJOR_VER}" -lt 5 || \
 		"${LINUX_MAJOR_VER}" -eq 5 && \
 		"${LINUX_MINOR_VER}" -lt 15 || \
@@ -72,7 +73,7 @@ linux_ver()
 		"${LINUX_MINOR_VER}" -eq 15 && \
 		"${LINUX_PATCH_VER}" -lt 83 ]]
 	then
-		printf "\\n\\tError: Linux kernel version must be newer than 5.15.83.\\n"
+		printf "\\n\\tError: Linux kernel version must be at least 5.15.83.\\n"
 		exit 1
 	else
 		printf "\\tLinux kernel version: %s\\n" \
@@ -82,6 +83,18 @@ linux_ver()
 
 linux_config_check()
 {
+	if [[ -r "/proc/config.gz" ]] ; then
+		KCONFIG="/proc/config.gz"
+	elif [[ -r "/boot/config-$(uname -r)" ]] ; then
+		KCONFIG="/boot/config-$(uname -r)"
+	else
+		printf "\\tKernel configuration not found.\\n"
+		return 0 ;
+	fi
+
+	printf "\\tCurrent kernel configuration found.
+\\tEnsuring Linux kernel has proper filesystem support...\\n"
+
 	BTRFS_OPTIONS="
 		BTRFS_FS
 		BTRFS_FS_POSIX_ACL
@@ -115,70 +128,66 @@ linux_config_check()
 	mapfile -s 1 -t XFS_STRINGS < <(printf "%s" "${XFS_OPTIONS}" | \
 		sed -e 's/\t//g' -e '$d')
 
-	if [[ -r "${KCONFIG}" ]] ; then
-		# Throw all errors first before exiting
-		set +e
+	# Throw all errors first before exiting
+	set +e
 
-		for (( i=0 ; i<"${#BTRFS_STRINGS[@]}" ; i++ )) ; do
-			if ! zgrep "CONFIG_${BTRFS_STRINGS[$i]}=m" \
-				"${KCONFIG}" >> /dev/null 2>&1 && \
+	for (( i=0 ; i < "${#BTRFS_STRINGS[@]}" ; i++ )) ; do
+		if ! zgrep "CONFIG_${BTRFS_STRINGS[$i]}=m" \
+			"${KCONFIG}" >> /dev/null 2>&1 && \
 			! zgrep "CONFIG_${BTRFS_STRINGS[$i]}=y" \
-				"${KCONFIG}" >> /dev/null 2>&1
-			then
-				printf "\\n\\tError: %s is not set.\\n" \
-					"CONFIG_${BTRFS_STRINGS[$i]}"
-				BTRFS_ERROR_THROWN=1
-			else
-				BTRFS_ERROR_THROWN=0
-			fi
-		done
+			"${KCONFIG}" >> /dev/null 2>&1
+		then
+			printf "\\n\\tError: %s is not set.\\n" \
+				"CONFIG_${BTRFS_STRINGS[$i]}"
+			BTRFS_ERROR_THROWN=1
+		else
+			BTRFS_ERROR_THROWN=0
+		fi
+	done
 
-		for (( i=0 ; i<"${#EXT4_STRINGS[@]}" ; i++ )) ; do
-			if ! zgrep "CONFIG_${EXT4_STRINGS[$i]}=m" \
-				"${KCONFIG}"  >> /dev/null 2>&1 && \
+	for (( i=0 ; i < "${#EXT4_STRINGS[@]}" ; i++ )) ; do
+		if ! zgrep "CONFIG_${EXT4_STRINGS[$i]}=m" \
+			"${KCONFIG}"  >> /dev/null 2>&1 && \
 			! zgrep "CONFIG_${EXT4_STRINGS[$i]}=y" \
-				"${KCONFIG}" >> /dev/null 2>&1
-			then
-				printf "\\n\\tError: %s is not set.\\n" \
-					"CONFIG_${EXT4_STRINGS[$i]}"
-				EXT4_ERROR_THROWN=1
-			else
-				EXT4_ERROR_THROWN=0
-			fi
-		done
+			"${KCONFIG}" >> /dev/null 2>&1
+		then
+			printf "\\n\\tError: %s is not set.\\n" \
+				"CONFIG_${EXT4_STRINGS[$i]}"
+			EXT4_ERROR_THROWN=1
+		else
+			EXT4_ERROR_THROWN=0
+		fi
+	done
 
-		for (( i=0 ; i<"${#F2FS_STRINGS[@]}" ; i++ )) ; do
-			if ! zgrep "CONFIG_${F2FS_STRINGS[$i]}=m" \
-				"${KCONFIG}" >> /dev/null 2>&1 && \
+	for (( i=0 ; i < "${#F2FS_STRINGS[@]}" ; i++ )) ; do
+		if ! zgrep "CONFIG_${F2FS_STRINGS[$i]}=m" \
+			"${KCONFIG}" >> /dev/null 2>&1 && \
 			! zgrep "CONFIG_${F2FS_STRINGS[$i]}=y" \
-				"${KCONFIG}" >> /dev/null 2>&1
-			then
-				printf "\\n\\tError: %s is not set.\\n" \
-					"CONFIG_${F2FS_STRINGS[$i]}"
-				F2FS_ERROR_THROWN=1
-			else
-				F2FS_ERROR_THROWN=0
-			fi
-		done
-		
-		for (( i=0 ; i<"${#XFS_STRINGS[@]}" ; i++ )) ; do
-			if ! zgrep "CONFIG_${XFS_STRINGS[$i]}=m" \
-				"${KCONFIG}" >> /dev/null 2>&1 && \
+			"${KCONFIG}" >> /dev/null 2>&1
+		then
+			printf "\\n\\tError: %s is not set.\\n" \
+				"CONFIG_${F2FS_STRINGS[$i]}"
+			F2FS_ERROR_THROWN=1
+		else
+			F2FS_ERROR_THROWN=0
+		fi
+	done
+
+	for (( i=0 ; i < "${#XFS_STRINGS[@]}" ; i++ )) ; do
+		if ! zgrep "CONFIG_${XFS_STRINGS[$i]}=m" \
+			"${KCONFIG}" >> /dev/null 2>&1 && \
 			! zgrep "CONFIG_${XFS_STRINGS[$i]}=y" \
-				"${KCONFIG}" >> /dev/null 2>&1
-			then
-				printf "\\n\\tError: %s is not set.\\n" \
-					"CONFIG_${XFS_STRINGS[$i]}"
-				XFS_ERROR_THROWN=1
-			else
-				XFS_ERROR_THROWN=0
-			fi
-		done
+			"${KCONFIG}" >> /dev/null 2>&1
+		then
+			printf "\\n\\tError: %s is not set.\\n" \
+				"CONFIG_${XFS_STRINGS[$i]}"
+			XFS_ERROR_THROWN=1
+		else
+			XFS_ERROR_THROWN=0
+		fi
+	done
 
-		set -e
-
-		printf "\\n"
-	fi
+	set -e
 }
 
 check_deps()
@@ -187,27 +196,23 @@ check_deps()
 
 	# This is necessary to ensure we don't create a BTRFS or F2FS filesystem
 	# with an ancient kernel, but also that the kernel is not newer than that
-	# used to mount the F2FS filesystem (the PREEMPT_RT kernel) For more info:
+	# used to mount the F2FS filesystem (the PREEMPT_RT kernel)
 	# https://bugzilla.opensuse.org/show_bug.cgi?id=1109665#c0
 	printf "\\tChecking Linux kernel version...\\n" ; linux_ver
 
-	if [[ -r "/proc/config.gz" ]] ; then
-		KCONFIG="/proc/config.gz"
+	# Make sure the running kernel supports BTRFS, EXT4, F2FS and XFS
+	# If unable to locate config, skip check, otherwise error out if options
+	# are disabled. Do not error out until all options have been gathered.
+	linux_config_check
 
-		printf "\\tCurrent kernel configuration found.
-\\tEnsuring Linux kernel has proper filesystem support...\\n"
-
-		linux_config_check
-
-		if [[ "${BTRFS_ERROR_THROWN}" -eq 1 || \
-			"${EXT4_ERROR_THROWN}" -eq 1 || \
-			"${F2FS_ERROR_THROWN}" -eq 1 || \
-			"${XFS_ERROR_THROWN}" -eq 1 ]]
-		then
-			# FIXME: WIP
-			# exit 1
-			return 0
-		fi
+	if [[ "${BTRFS_ERROR_THROWN}" -eq 1 || \
+		"${EXT4_ERROR_THROWN}" -eq 1 || \
+		"${F2FS_ERROR_THROWN}" -eq 1 || \
+		"${XFS_ERROR_THROWN}" -eq 1 ]]
+	then
+		# FIXME: WIP
+		# exit 1
+		return 0
 	fi
 
 	type mkfs.ext4 >> /dev/null 2>&1 || \
@@ -412,12 +417,19 @@ check_drive()
 			printf "\\n\\tError: NVMe Partition has been specified.\\n"
 			exit 1
 		fi
+
+		# Used to determine if we need `p` used in partitions or not
+		P="p"
 	elif [[ "${ENTIRE_DRIVE}" == *[0-9]* ]] ; then
 		printf "\\n\\tError: Partition has been specified.\\n"
 		exit 1
+	else
+		P=""
 	fi
 
-	if [[ -b "${ENTIRE_DRIVE}" && "${ENTIRE_DRIVE}" == "/dev/"* ]] ; then
+	if [[ "${ENTIRE_DRIVE}" == "/dev/"* && \
+		-b "${ENTIRE_DRIVE}" ]]
+	then
 		printf "\\tBlock device: %s is valid.\\n" "${ENTIRE_DRIVE}"
 	else
 		printf "\\n\\tError: Invalid block device: %s\\n" "${ENTIRE_DRIVE}"
@@ -524,11 +536,11 @@ wipe_drive()
 
 	wipefs -a -f "${ENTIRE_DRIVE}" ; printf "\\n"
 
-	dd if=/dev/zero of="${ENTIRE_DRIVE}" bs=8M count=16 \
-		oflag=sync status=progress ; printf "\\n"
-
 	if [[ "${ENTIRE_DRIVE}" == "/dev/nvme"* ]] ; then
 		blkdiscard "${ENTIRE_DRIVE}"
+	else
+		dd if=/dev/zero of="${ENTIRE_DRIVE}" bs=8M count=16 \
+			oflag=sync status=progress ; printf "\\n"
 	fi
 
 	sleep 5 && sync
@@ -635,18 +647,13 @@ partition_drive()
 		EOF
 	fi
 
-	if [[ "${ENTIRE_DRIVE}" == "/dev/nvme"* ]] ; then
-		EFI_PART="${ENTIRE_DRIVE}p1"
-		BOOT_PART="${ENTIRE_DRIVE}p2"
-		HOME_PART="${ENTIRE_DRIVE}p3"
-		ROOT_PART="${ENTIRE_DRIVE}p4"
-	elif [[ "${INSTALL_TYPE}" == "UEFI" ]] ; then
-		EFI_PART="${ENTIRE_DRIVE}1"
+	if [[ "${INSTALL_TYPE}" == "UEFI" ]] ; then
+		EFI_PART="${ENTIRE_DRIVE}${P}1"
 	fi
 
-	BOOT_PART="${ENTIRE_DRIVE}2"
-	HOME_PART="${ENTIRE_DRIVE}3"
-	ROOT_PART="${ENTIRE_DRIVE}4"
+	BOOT_PART="${ENTIRE_DRIVE}${P}2"
+	HOME_PART="${ENTIRE_DRIVE}${P}3"
+	ROOT_PART="${ENTIRE_DRIVE}${P}4"
 
 	# Required for properly parsing PARTUUIDs, not a bad idea anyway
 	sleep 5 ; sync ; partprobe
@@ -708,18 +715,18 @@ choose_filesystem()
 	then
 		FSTYPE="BTRFS"
 	elif [[ "${FSTYPE_ARG}" == "EXT4" || \
-		"${FSTYPE_ARG}" == "ext4" ]]
+		"${FSTYPE_ARG}" == "ext4" || \
+		"${FSTYPE_ARG}" == "DEFAULT" && \
+		"${ENTIRE_DRIVE}" != "/dev/nvme"* || \
+		"${FSTYPE_ARG}" == "default" && \
+		"${ENTIRE_DRIVE}" != "/dev/nvme"* || \
+		"${ENTIRE_DRIVE}" != "/dev/nvme"* && \
+		-z "${FSTYPE_ARG}" ]]
 	then
 		FSTYPE="EXT4"
 	elif [[ "${FSTYPE_ARG}" == "F2FS" || \
-		"${FSTYPE_ARG}" == "f2fs" ]]
-	then
-		FSTYPE="F2FS"
-	elif [[ "${FSTYPE_ARG}" == "XFS" || \
-		"${FSTYPE_ARG}" == "xfs" ]]
-	then
-		FSTYPE="XFS"
-	elif [[ "${FSTYPE_ARG}" == "DEFAULT" && \
+		"${FSTYPE_ARG}" == "f2fs" || \
+		"${FSTYPE_ARG}" == "DEFAULT" && \
 		"${ENTIRE_DRIVE}" == "/dev/nvme"* || \
 		"${FSTYPE_ARG}" == "default" && \
 		"${ENTIRE_DRIVE}" == "/dev/nvme"* || \
@@ -727,11 +734,10 @@ choose_filesystem()
 		-z "${FSTYPE_ARG}" ]]
 	then
 		FSTYPE="F2FS"
-	elif [[ "${FSTYPE_ARG}" == "DEFAULT" || \
-		"${FSTYPE_ARG}" == "default" || \
-		-z "${FSTYPE_ARG}" ]]
+	elif [[ "${FSTYPE_ARG}" == "XFS" || \
+		"${FSTYPE_ARG}" == "xfs" ]]
 	then
-		FSTYPE="EXT4"
+		FSTYPE="XFS"
 	else
 		printf "\\n\\tError: Invalid selection: %s\\n" "${FSTYPE_ARG}"
 		exit 1
