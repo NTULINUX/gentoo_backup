@@ -19,6 +19,38 @@ fi
 
 ROOT_MOUNT="/mnt/gentoo-cnc"
 
+verify_psabi()
+{
+	printf "\\n\\tChecking CPU requirements...\\n"
+
+	X86_64_V2="
+		mmx
+		mmxext
+		popcnt
+		sse
+		sse2
+		sse3
+		ssse3
+		sse4_1
+		sse4_2
+	"
+
+	mapfile -s 1 -t FLAGS < <(printf "%s" "${X86_64_V2}" | sed 's/\t//g')
+
+	for (( i=0 ; i < "${#FLAGS[@]}" ; i++ )) ; do
+		printf "\\tChecking for: %s\\n" "${FLAGS[$i]}"
+
+		lscpu | grep "${FLAGS[$i]}" >> /dev/null 2>&1 || \
+		{
+			printf "\\tERROR: Missing: %s\\n" "${FLAGS[$i]}" ;
+			exit 1 ;
+		}
+	done
+
+	printf "\\n\\tDone. Your processor is x86-64-v2 or newer.\\n"
+	printf "\\tYou may safely use the Gentoo image for LinuxCNC.\\n"
+}
+
 # Put version checks into their own section for ease of maintenance
 btrfs_ver()
 {
@@ -203,7 +235,7 @@ check_deps()
 	# Make sure the running kernel supports BTRFS, EXT4, F2FS and XFS
 	# If unable to locate config, skip check, otherwise error out if options
 	# are disabled. Do not error out until all options have been gathered.
-	linux_config_check
+	linux_config_check ; printf "\\n"
 
 	if [[ "${BTRFS_ERROR_THROWN}" -eq 1 || \
 		"${EXT4_ERROR_THROWN}" -eq 1 || \
@@ -212,7 +244,7 @@ check_deps()
 	then
 		# FIXME: WIP
 		# exit 1
-		return 0
+		sleep 0
 	fi
 
 	type mkfs.ext4 >> /dev/null 2>&1 || \
@@ -765,7 +797,7 @@ format_partitions()
 		mkfs.ext4 "${ROOT_PART}"
 	elif [[ "${FSTYPE}" == "F2FS" ]] ; then
 		printf "\\tF2FS selected. Using safe defaults...\\n"
-		# F2FS xattr currently not supported in GRUB, exclude only for /boot
+		# F2FS xattr currently not supported in GRUB, exclude for /boot
 		# (no compression)
 		mkfs.f2fs "${BOOT_PART}"
 		mkfs.f2fs -O extra_attr,inode_checksum,sb_checksum "${HOME_PART}"
@@ -837,7 +869,8 @@ mount_init_filesystems()
 
 	mkdir -p "${ROOT_MOUNT}/boot" || \
 	{
-		printf "\\n\\tError: Failed to create: %s\\n" "${ROOT_MOUNT}/boot" ;
+		printf "\\n\\tError: Failed to create: %s\\n" \
+			"${ROOT_MOUNT}/boot" ;
 		exit 1 ;
 	}
 
@@ -1232,6 +1265,8 @@ cleanup()
 
 	printf "\\n\\tDone.\\n"
 }
+
+verify_psabi
 
 check_deps
 
