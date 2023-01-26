@@ -51,68 +51,28 @@ verify_psabi()
 	printf "\\tYou may safely use the Gentoo image for LinuxCNC.\\n"
 }
 
-# Put version checks into their own section for ease of maintenance
-btrfs_ver()
-{
-	BTRFS_MAJOR_VER=$(mkfs.btrfs -V | grep -o "[0-9]" | sed -n '1p')
-	BTRFS_MINOR_VER=$(mkfs.btrfs -V | grep -o "[0-9]" | sed -n '2p')
-	BTRFS_PATCH_VER=$(mkfs.btrfs -V | grep -o "[0-9]" | sed -n '3p')
-
-	if [[ "${BTRFS_MAJOR_VER}" -lt 5 || \
-		"${BTRFS_MAJOR_VER}" -eq 5 && \
-		"${BTRFS_MINOR_VER}" -lt 15 || \
-		"${BTRFS_MINOR_VER}" -eq 15 && \
-		"${BTRFS_PATCH_VER}" -lt 1 ]]
-	then
-		printf "\\n\\tError: btfrs-progs must be 5.15.1 or newer.\\n"
-		exit 1
-	else
-		printf "\\tbtrfs-progs version: %s\\n" \
-			"${BTRFS_MAJOR_VER}.${BTRFS_MINOR_VER}.${BTRFS_PATCH_VER}"
-	fi
-}
-
-f2fs_ver()
-{
-	F2FS_MAJOR_VER=$(mkfs.f2fs -V | cut -d ' ' -f2 | cut -d '.' -f1)
-	F2FS_MINOR_VER=$(mkfs.f2fs -V | cut -d ' ' -f2 | cut -d '.' -f2)
-
-	if [[ "${F2FS_MAJOR_VER}" -lt 1 || \
-		"${F2FS_MAJOR_VER}" -eq 1 && \
-		"${F2FS_MINOR_VER}" -lt 15 ]]
-	then
-		printf "\\n\\tError: f2fs-tools must be 1.15.0 or newer.\\n"
-		exit 1
-	else
-		printf "\\tf2fs-progs version: %s\\n" \
-			"${F2FS_MAJOR_VER}.${F2FS_MINOR_VER}"
-	fi
-}
-
 # TODO: Add max kernel version once deployed in Gentoo image
 # Linux kernel cannot be newer than one in image (PREEMPT_RT) if F2FS is used
 linux_ver()
 {
+	printf "\\tChecking Linux kernel version...\\n"
+
 	LINUX_MAJOR_VER=$(uname -r | cut -d '.' -f1)
 	LINUX_MINOR_VER=$(uname -r | cut -d '.' -f2)
-	LINUX_PATCH_VER=$(uname -r | cut -d '.' -f3)
 
-	# SystemRescue 9.06 uses Linux 5.15.83 (ideal work environment)
 	if [[ "${LINUX_MAJOR_VER}" -lt 5 || \
 		"${LINUX_MAJOR_VER}" -eq 5 && \
-		"${LINUX_MINOR_VER}" -lt 15 || \
-		"${LINUX_MAJOR_VER}" -eq 5 && \
-		"${LINUX_MINOR_VER}" -eq 15 && \
-		"${LINUX_PATCH_VER}" -lt 83 ]]
+		"${LINUX_MINOR_VER}" -lt 15 ]]
 	then
-		printf "\\n\\tError: Linux kernel version must be at least 5.15.83.\\n"
+		printf "\\n\\tError: Linux kernel version must be at least 5.15.0\\n"
 		exit 1
 	else
-		printf "\\tLinux kernel version: %s\\n" \
-		"${LINUX_MAJOR_VER}.${LINUX_MINOR_VER}.${LINUX_PATCH_VER}"
+		printf "\\tLinux kernel version: %s\\n" "$(uname -r)"
 	fi
 }
 
+# If unable to locate config, skip checking for filesystem support. If options
+# are disabled, do not error out until all options have been gathered.
 linux_config_check()
 {
 	if [[ -r "/proc/config.gz" ]] ; then
@@ -124,7 +84,7 @@ linux_config_check()
 		return 0 ;
 	fi
 
-	printf "\\tCurrent kernel configuration found.
+	printf "\\n\\tCurrent kernel configuration found.
 \\tEnsuring Linux kernel has proper filesystem support...\\n"
 
 	BTRFS_OPTIONS="
@@ -220,6 +180,57 @@ linux_config_check()
 	done
 
 	set -e
+
+	if [[ "${BTRFS_ERROR_THROWN}" -eq 1 || \
+		"${EXT4_ERROR_THROWN}" -eq 1 || \
+		"${F2FS_ERROR_THROWN}" -eq 1 || \
+		"${XFS_ERROR_THROWN}" -eq 1 ]]
+	then
+		printf "\\n\\tErrors detected. Exiting...\\n\\n"
+		# FIXME: WIP
+		# exit 1
+		sleep 0
+	else
+		printf "\\tAll filesystems enabled.\\n\\n"
+	fi
+}
+
+# Put version checks into their own section for ease of maintenance
+btrfs_ver()
+{
+	BTRFS_MAJOR_VER=$(mkfs.btrfs -V | grep -o "[0-9]" | sed -n '1p')
+	BTRFS_MINOR_VER=$(mkfs.btrfs -V | grep -o "[0-9]" | sed -n '2p')
+	BTRFS_PATCH_VER=$(mkfs.btrfs -V | grep -o "[0-9]" | sed -n '3p')
+
+	if [[ "${BTRFS_MAJOR_VER}" -lt 5 || \
+		"${BTRFS_MAJOR_VER}" -eq 5 && \
+		"${BTRFS_MINOR_VER}" -lt 15 || \
+		"${BTRFS_MINOR_VER}" -eq 15 && \
+		"${BTRFS_PATCH_VER}" -lt 1 ]]
+	then
+		printf "\\n\\tError: btfrs-progs must be 5.15.1 or newer.\\n"
+		exit 1
+	else
+		printf "\\tbtrfs-progs version: %s\\n" \
+			"${BTRFS_MAJOR_VER}.${BTRFS_MINOR_VER}.${BTRFS_PATCH_VER}"
+	fi
+}
+
+f2fs_ver()
+{
+	F2FS_MAJOR_VER=$(mkfs.f2fs -V | cut -d ' ' -f2 | cut -d '.' -f1)
+	F2FS_MINOR_VER=$(mkfs.f2fs -V | cut -d ' ' -f2 | cut -d '.' -f2)
+
+	if [[ "${F2FS_MAJOR_VER}" -lt 1 || \
+		"${F2FS_MAJOR_VER}" -eq 1 && \
+		"${F2FS_MINOR_VER}" -lt 15 ]]
+	then
+		printf "\\n\\tError: f2fs-tools must be 1.15.0 or newer.\\n"
+		exit 1
+	else
+		printf "\\tf2fs-progs version: %s\\n" \
+			"${F2FS_MAJOR_VER}.${F2FS_MINOR_VER}"
+	fi
 }
 
 check_deps()
@@ -230,22 +241,10 @@ check_deps()
 	# with an ancient kernel, but also that the kernel is not newer than that
 	# used to mount the F2FS filesystem (the PREEMPT_RT kernel)
 	# https://bugzilla.opensuse.org/show_bug.cgi?id=1109665#c0
-	printf "\\tChecking Linux kernel version...\\n" ; linux_ver
+	linux_ver
 
 	# Make sure the running kernel supports BTRFS, EXT4, F2FS and XFS
-	# If unable to locate config, skip check, otherwise error out if options
-	# are disabled. Do not error out until all options have been gathered.
-	linux_config_check ; printf "\\n"
-
-	if [[ "${BTRFS_ERROR_THROWN}" -eq 1 || \
-		"${EXT4_ERROR_THROWN}" -eq 1 || \
-		"${F2FS_ERROR_THROWN}" -eq 1 || \
-		"${XFS_ERROR_THROWN}" -eq 1 ]]
-	then
-		# FIXME: WIP
-		# exit 1
-		sleep 0
-	fi
+	linux_config_check
 
 	type mkfs.ext4 >> /dev/null 2>&1 || \
 	{
@@ -307,7 +306,7 @@ check_deps()
 		exit 1 ;
 	}
 
-	printf "\\tDone.\\n"
+	printf "\\n\\tDone.\\n"
 }
 
 legacy_or_uefi()
@@ -478,7 +477,7 @@ check_drive()
 		exit 1
 	fi
 
-	printf "\\tDone.\\n"
+	printf "\\n\\tDone.\\n"
 
 	# GRUB's `--removable` flag is only applicable to UEFI platforms
 	if [[ "${INSTALL_TYPE}" == "UEFI" ]] ; then
@@ -548,6 +547,54 @@ check_drive()
 	fi
 }
 
+choose_filesystem()
+{
+	printf "\\n\\tPlease select your choice of filesystem.
+\\tFor NVMe and SSDs, F2FS may give best performance.\\n
+\\tValid options:
+\\t\\tBTRFS/btrfs
+\\t\\tEXT4/ext4 (default for non-NVMe drives)
+\\t\\tF2FS/f2fs (default for NVMe drives)
+\\t\\tXFS/xfs\\n\\n"
+
+	read -r "FSTYPE_ARG"
+
+	if [[ "${FSTYPE_ARG}" == "BTRFS" || \
+		"${FSTYPE_ARG}" == "btrfs" ]]
+	then
+		FSTYPE="BTRFS"
+	elif [[ "${FSTYPE_ARG}" == "EXT4" || \
+		"${FSTYPE_ARG}" == "ext4" || \
+		"${FSTYPE_ARG}" == "DEFAULT" && \
+		"${ENTIRE_DRIVE}" != "/dev/nvme"* || \
+		"${FSTYPE_ARG}" == "default" && \
+		"${ENTIRE_DRIVE}" != "/dev/nvme"* || \
+		"${ENTIRE_DRIVE}" != "/dev/nvme"* && \
+		-z "${FSTYPE_ARG}" ]]
+	then
+		FSTYPE="EXT4"
+	elif [[ "${FSTYPE_ARG}" == "F2FS" || \
+		"${FSTYPE_ARG}" == "f2fs" || \
+		"${FSTYPE_ARG}" == "DEFAULT" && \
+		"${ENTIRE_DRIVE}" == "/dev/nvme"* || \
+		"${FSTYPE_ARG}" == "default" && \
+		"${ENTIRE_DRIVE}" == "/dev/nvme"* || \
+		"${ENTIRE_DRIVE}" == "/dev/nvme"* && \
+		-z "${FSTYPE_ARG}" ]]
+	then
+		FSTYPE="F2FS"
+	elif [[ "${FSTYPE_ARG}" == "XFS" || \
+		"${FSTYPE_ARG}" == "xfs" ]]
+	then
+		FSTYPE="XFS"
+	else
+		printf "\\n\\tError: Invalid selection: %s\\n" "${FSTYPE_ARG}"
+		exit 1
+	fi
+
+	printf "\\n\\tSelected filesystem: %s\\n" "${FSTYPE}"
+}
+
 wipe_drive()
 {
 	printf "\\n\\tTarget installation media to erase: %s\\n
@@ -564,20 +611,20 @@ wipe_drive()
 	printf "\\t2.\\n" ; sleep 1
 	printf "\\t1.\\n" ; sleep 1
 
-	printf "\\n\\tRemoving data on: %s\\n\\n" "${ENTIRE_DRIVE}"
+	printf "\\n\\tRemoving data on: %s\\n" "${ENTIRE_DRIVE}"
 
-	wipefs -a -f "${ENTIRE_DRIVE}" ; printf "\\n"
+	1> /dev/null wipefs -a -f "${ENTIRE_DRIVE}" ; printf "\\n"
 
 	if [[ "${ENTIRE_DRIVE}" == "/dev/nvme"* ]] ; then
-		blkdiscard "${ENTIRE_DRIVE}"
+		1> /dev/null blkdiscard "${ENTIRE_DRIVE}"
 	else
 		dd if=/dev/zero of="${ENTIRE_DRIVE}" bs=8M count=16 \
-			oflag=sync status=progress ; printf "\\n"
+			oflag=sync status=progress >> /dev/null 2>&1
 	fi
 
 	sleep 5 && sync
 
-	printf "\\n\\tDone.\\n"
+	printf "\\tDone.\\n"
 }
 
 partition_sizes()
@@ -657,12 +704,15 @@ partition_drive()
 	fi
 
 	printf "\\tLinux extended boot partition ( /boot ): %s
-\\tLinux home partition ( /home ): %sG
-\\tLinux root (x86-64) partition ( / ): %sG\\n\\n" \
-	"${BOOT_PART_SIZE}" "${HOME_PART_SIZE}" "${ROOT_PART_SIZE}"
+\\tLinux home partition ( /home ): %sG ( %s )
+\\tLinux root (x86-64) partition ( / ): %sG ( %s )\\n" \
+	"${BOOT_PART_SIZE}" "${HOME_PART_SIZE}" "${FSTYPE}" \
+	"${ROOT_PART_SIZE}" "${FSTYPE}"
 
 	if [[ "${INSTALL_TYPE}" == "LEGACY" ]] ; then
-		sfdisk -w always -W always "${ENTIRE_DRIVE}" <<-EOF
+		sfdisk -w always -W always \
+			"${ENTIRE_DRIVE}" <<-EOF >> /dev/null 2>&1
+
 			label :gpt
 			,"${BIOS_PART_SIZE}","${BIOS_GUID}"
 			,"${BOOT_PART_SIZE}","${BOOT_GUID}"
@@ -670,7 +720,9 @@ partition_drive()
 			,"${ROOT_PART_SIZE}G","${ROOT_GUID}"
 		EOF
 	elif [[ "${INSTALL_TYPE}" == "UEFI" ]] ; then
-		sfdisk -w always -W always "${ENTIRE_DRIVE}" <<-EOF
+		sfdisk -w always -W always \
+			"${ENTIRE_DRIVE}" <<-EOF >> /dev/null 2>&1
+
 			label :gpt
 			,"${EFI_PART_SIZE}","${EFI_GUID}"
 			,"${BOOT_PART_SIZE}","${BOOT_GUID}"
@@ -730,90 +782,43 @@ partition_drive()
 	printf "\\n\\tDone.\\n"
 }
 
-choose_filesystem()
-{
-	printf "\\n\\tPlease select your choice of filesystem.
-\\tFor NVMe and SSDs, F2FS may give best performance.\\n
-\\tValid options:
-\\t\\tBTRFS/btrfs
-\\t\\tEXT4/ext4 (default for non-NVMe drives)
-\\t\\tF2FS/f2fs (default for NVMe drives)
-\\t\\tXFS/xfs\\n\\n"
-
-	read -r "FSTYPE_ARG"
-
-	if [[ "${FSTYPE_ARG}" == "BTRFS" || \
-		"${FSTYPE_ARG}" == "btrfs" ]]
-	then
-		FSTYPE="BTRFS"
-	elif [[ "${FSTYPE_ARG}" == "EXT4" || \
-		"${FSTYPE_ARG}" == "ext4" || \
-		"${FSTYPE_ARG}" == "DEFAULT" && \
-		"${ENTIRE_DRIVE}" != "/dev/nvme"* || \
-		"${FSTYPE_ARG}" == "default" && \
-		"${ENTIRE_DRIVE}" != "/dev/nvme"* || \
-		"${ENTIRE_DRIVE}" != "/dev/nvme"* && \
-		-z "${FSTYPE_ARG}" ]]
-	then
-		FSTYPE="EXT4"
-	elif [[ "${FSTYPE_ARG}" == "F2FS" || \
-		"${FSTYPE_ARG}" == "f2fs" || \
-		"${FSTYPE_ARG}" == "DEFAULT" && \
-		"${ENTIRE_DRIVE}" == "/dev/nvme"* || \
-		"${FSTYPE_ARG}" == "default" && \
-		"${ENTIRE_DRIVE}" == "/dev/nvme"* || \
-		"${ENTIRE_DRIVE}" == "/dev/nvme"* && \
-		-z "${FSTYPE_ARG}" ]]
-	then
-		FSTYPE="F2FS"
-	elif [[ "${FSTYPE_ARG}" == "XFS" || \
-		"${FSTYPE_ARG}" == "xfs" ]]
-	then
-		FSTYPE="XFS"
-	else
-		printf "\\n\\tError: Invalid selection: %s\\n" "${FSTYPE_ARG}"
-		exit 1
-	fi
-
-	printf "\\n\\tSelected filesystem: %s\\n" "${FSTYPE}"
-}
-
 format_partitions()
 {
 	printf "\\n\\tFormatting partitions...\\n\\n"
 
 	# Only if UEFI is enabled do we format the first partition
 	if [[ "${INSTALL_TYPE}" == "UEFI" ]] ; then
-		mkfs.fat -F 32 "${EFI_PART}"
+		1> /dev/null mkfs.fat -F 32 "${EFI_PART}"
 	fi
 
 	if [[ "${FSTYPE}" == "BTRFS" ]] ; then
-		mkfs.btrfs "${BOOT_PART}"
-		mkfs.btrfs "${HOME_PART}"
-		mkfs.btrfs "${ROOT_PART}"
+		1> /dev/null mkfs.btrfs "${BOOT_PART}"
+		1> /dev/null mkfs.btrfs "${HOME_PART}"
+		1> /dev/null mkfs.btrfs "${ROOT_PART}"
 	elif [[ "${FSTYPE}" == "EXT4" ]] ; then
-		mkfs.ext4 "${BOOT_PART}"
-		mkfs.ext4 "${HOME_PART}"
-		mkfs.ext4 "${ROOT_PART}"
+		1> /dev/null mkfs.ext4 "${BOOT_PART}"
+		1> /dev/null mkfs.ext4 "${HOME_PART}"
+		1> /dev/null mkfs.ext4 "${ROOT_PART}"
 	elif [[ "${FSTYPE}" == "F2FS" ]] ; then
+		F2FS_DEFAULTS="extra_attr,inode_checksum,sb_checksum"
 		printf "\\tF2FS selected. Using safe defaults...\\n"
 		# F2FS xattr currently not supported in GRUB, exclude for /boot
 		# (no compression)
-		mkfs.f2fs "${BOOT_PART}"
-		mkfs.f2fs -O extra_attr,inode_checksum,sb_checksum "${HOME_PART}"
-		mkfs.f2fs -O extra_attr,inode_checksum,sb_checksum "${ROOT_PART}"
+		1> /dev/null mkfs.f2fs "${BOOT_PART}"
+		1> /dev/null mkfs.f2fs -O "${F2FS_DEFAULTS}" "${HOME_PART}"
+		1> /dev/null mkfs.f2fs -O "${F2FS_DEFAULTS}" "${ROOT_PART}"
 	elif [[ "${FSTYPE}" == "XFS" ]] ; then
-		mkfs.xfs "${BOOT_PART}"
-		mkfs.xfs "${HOME_PART}"
-		mkfs.xfs "${ROOT_PART}"
+		1> /dev/null mkfs.xfs "${BOOT_PART}"
+		1> /dev/null mkfs.xfs "${HOME_PART}"
+		1> /dev/null mkfs.xfs "${ROOT_PART}"
 	fi
 
-	printf "\\n\\tDone.\\n"
+	printf "\\tDone.\\n"
 }
 
 mount_init_filesystems()
 {
-	printf "\\n\\tPreparing to mount filesystems for installation...\\n"
+	printf "\\n\\tPreparing for installation...\\n"
 
 	printf "\\tEnsuring directory: %s does not exist...\\n" "${ROOT_MOUNT}"
 
@@ -848,15 +853,13 @@ mount_init_filesystems()
 		exit 1
 	fi
 
-	printf "\\tCreating top level directory for installation...\\n"
-
 	mkdir -p "${ROOT_MOUNT}" || \
 	{
 		printf "\\n\\tError: Failed to create: %s\\n" "${ROOT_MOUNT}" ;
 		exit 1 ;
 	}
 
-	printf "\\n\\tMounting root filesystem...\\n"
+	printf "\\tMounting root filesystem...\\n"
 
 	mount "${ROOT_PART}" "${ROOT_MOUNT}" || \
 	{
@@ -865,7 +868,7 @@ mount_init_filesystems()
 		exit 1 ;
 	}
 
-	printf "\\n\\tMounting boot filesystem...\\n"
+	printf "\\tMounting boot filesystem...\\n"
 
 	mkdir -p "${ROOT_MOUNT}/boot" || \
 	{
@@ -1274,13 +1277,13 @@ legacy_or_uefi
 
 check_drive
 
+choose_filesystem
+
 wipe_drive
 
 partition_sizes
 
 partition_drive
-
-choose_filesystem
 
 format_partitions
 
