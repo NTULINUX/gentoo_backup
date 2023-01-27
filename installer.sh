@@ -19,6 +19,52 @@ fi
 
 ROOT_MOUNT="/mnt/gentoo-cnc"
 
+verbose_prompt()
+{
+	printf "\\n\\tEnable verbose installation?
+\\tThis may help diagnose problems with installation but may produce
+\\texcessive terminal scrollback.\\n
+\\tValid options:
+\\t\\tYES/yes
+\\t\\tNO/no (default)\\n\\n"
+
+	read -r "VERBOSE_ARG" ; printf "\\n"
+
+	if [[ "${VERBOSE_ARG}" == "N" || \
+		"${VERBOSE_ARG}" == "NO" || \
+		"${VERBOSE_ARG}" == "n" || \
+		"${VERBOSE_ARG}" == "no" || \
+		"${VERBOSE_ARG}" == "DEFAULT" || \
+		"${VERBOSE_ARG}" == "default" || \
+		-z "${VERBOSE_ARG}" ]]
+	then
+		VERBOSE_INSTALL="FALSE"
+		printf "\\tVerbose install disabled.\\n"
+	elif [[ "${VERBOSE_ARG}" == "Y" || \
+		"${VERBOSE_ARG}" == "YES" || \
+		"${VERBOSE_ARG}" == "y" || \
+		"${VERBOSE_ARG}" == "yes" ]]
+	then
+		VERBOSE_INSTALL="TRUE"
+		printf "\\tVerbose install enabled.\\n"
+	else
+		printf "\\n\\tError: Invalid selection: %s\\n" \
+			"${VERBOSE_ARG}"
+		exit 1
+	fi
+}
+
+verbose_prompt
+
+if_log()
+{
+	if [[ "${VERBOSE_INSTALL}" == "FALSE" ]] ; then
+		"${@}" >> /dev/null 2>&1
+	elif [[ "${VERBOSE_INSTALL}" == "TRUE" ]] ; then
+		"${@}"
+	fi
+}
+
 verify_psabi()
 {
 	printf "\\n\\tChecking CPU requirements...\\n"
@@ -42,7 +88,7 @@ verify_psabi()
 
 		lscpu | grep "${FLAGS[$i]}" >> /dev/null 2>&1 || \
 		{
-			printf "\\tERROR: Missing: %s\\n" "${FLAGS[$i]}" ;
+			printf "\\tError: Missing: %s\\n" "${FLAGS[$i]}" ;
 			exit 1 ;
 		}
 	done
@@ -613,13 +659,13 @@ wipe_drive()
 
 	printf "\\n\\tRemoving data on: %s\\n" "${ENTIRE_DRIVE}"
 
-	1> /dev/null wipefs -a -f "${ENTIRE_DRIVE}" ; printf "\\n"
+	if_log wipefs -a -f "${ENTIRE_DRIVE}" ; printf "\\n"
 
 	if [[ "${ENTIRE_DRIVE}" == "/dev/nvme"* ]] ; then
-		1> /dev/null blkdiscard "${ENTIRE_DRIVE}"
+		if_log blkdiscard "${ENTIRE_DRIVE}"
 	else
-		dd if=/dev/zero of="${ENTIRE_DRIVE}" bs=8M count=16 \
-			oflag=sync status=progress >> /dev/null 2>&1
+		if_log dd if=/dev/zero of="${ENTIRE_DRIVE}" bs=8M count=16 \
+			oflag=sync status=progress
 	fi
 
 	sleep 5 && sync
@@ -709,9 +755,16 @@ partition_drive()
 	"${BOOT_PART_SIZE}" "${HOME_PART_SIZE}" "${FSTYPE}" \
 	"${ROOT_PART_SIZE}" "${FSTYPE}"
 
+	sfdisk_die()
+	{
+		printf "\\n\\tError: Failed to partition: %s\\n" \
+			"${ENTIRE_DRIVE}" ;
+		exit 1 ;
+	}
+
 	if [[ "${INSTALL_TYPE}" == "LEGACY" ]] ; then
-		sfdisk -w always -W always \
-			"${ENTIRE_DRIVE}" <<-EOF >> /dev/null 2>&1
+		if_log sfdisk -w always -W always "${ENTIRE_DRIVE}" <<-EOF || \
+			sfdisk_die
 
 			label :gpt
 			,"${BIOS_PART_SIZE}","${BIOS_GUID}"
@@ -720,8 +773,8 @@ partition_drive()
 			,"${ROOT_PART_SIZE}G","${ROOT_GUID}"
 		EOF
 	elif [[ "${INSTALL_TYPE}" == "UEFI" ]] ; then
-		sfdisk -w always -W always \
-			"${ENTIRE_DRIVE}" <<-EOF >> /dev/null 2>&1
+		if_log sfdisk -w always -W always "${ENTIRE_DRIVE}" <<-EOF || \
+			sfdisk_die
 
 			label :gpt
 			,"${EFI_PART_SIZE}","${EFI_GUID}"
@@ -788,29 +841,103 @@ format_partitions()
 
 	# Only if UEFI is enabled do we format the first partition
 	if [[ "${INSTALL_TYPE}" == "UEFI" ]] ; then
-		1> /dev/null mkfs.fat -F 32 "${EFI_PART}"
+		if_log mkfs.fat -F 32 "${EFI_PART}" || \
+		{
+			printf "\\n\\tError: Failed to format: %s as: FAT32\\n" \
+				"${BOOT_PART}" "${FSTYPE}" ;
+			exit 1 ;
+		}
 	fi
 
 	if [[ "${FSTYPE}" == "BTRFS" ]] ; then
-		1> /dev/null mkfs.btrfs "${BOOT_PART}"
-		1> /dev/null mkfs.btrfs "${HOME_PART}"
-		1> /dev/null mkfs.btrfs "${ROOT_PART}"
+		if_log mkfs.btrfs "${BOOT_PART}" || \
+		{
+			printf "\\n\\tError: Failed to format: %s as: %s\\n" \
+				"${BOOT_PART}" "${FSTYPE}" ;
+			exit 1 ;
+		}
+
+		if_log mkfs.btrfs "${HOME_PART}" || \
+		{
+			printf "\\n\\tError: Failed to format: %s as: %s\\n" \
+				"${HOME_PART}" "${FSTYPE}" ;
+			exit 1 ;
+		}
+
+		if_log mkfs.btrfs "${ROOT_PART}" || \
+		{
+			printf "\\n\\tError: Failed to format: %s as: %s\\n" \
+				"${ROOT_PART}" "${FSTYPE}" ;
+			exit 1 ;
+		}
 	elif [[ "${FSTYPE}" == "EXT4" ]] ; then
-		1> /dev/null mkfs.ext4 "${BOOT_PART}"
-		1> /dev/null mkfs.ext4 "${HOME_PART}"
-		1> /dev/null mkfs.ext4 "${ROOT_PART}"
+		if_log mkfs.ext4 "${BOOT_PART}" || \
+		{
+			printf "\\n\\tError: Failed to format: %s as: %s\\n" \
+				"${BOOT_PART}" "${FSTYPE}" ;
+			exit 1 ;
+		}
+
+		if_log mkfs.ext4 "${HOME_PART}" || \
+		{
+			printf "\\n\\tError: Failed to format: %s as: %s\\n" \
+				"${HOME_PART}" "${FSTYPE}" ;
+			exit 1 ;
+		}
+
+		if_log mkfs.ext4 "${ROOT_PART}" || \
+		{
+			printf "\\n\\tError: Failed to format: %s as: %s\\n" \
+				"${ROOT_PART}" "${FSTYPE}" ;
+			exit 1 ;
+		}
 	elif [[ "${FSTYPE}" == "F2FS" ]] ; then
 		F2FS_DEFAULTS="extra_attr,inode_checksum,sb_checksum"
+
 		printf "\\tF2FS selected. Using safe defaults...\\n"
 		# F2FS xattr currently not supported in GRUB, exclude for /boot
 		# (no compression)
-		1> /dev/null mkfs.f2fs "${BOOT_PART}"
-		1> /dev/null mkfs.f2fs -O "${F2FS_DEFAULTS}" "${HOME_PART}"
-		1> /dev/null mkfs.f2fs -O "${F2FS_DEFAULTS}" "${ROOT_PART}"
+		if_log mkfs.f2fs "${BOOT_PART}" || \
+		{
+			printf "\\n\\tError: Failed to format: %s as: %s\\n" \
+				"${BOOT_PART}" "${FSTYPE}" ;
+			exit 1 ;
+		}
+
+		if_log mkfs.f2fs -O "${F2FS_DEFAULTS}" "${HOME_PART}" || \
+		{
+			printf "\\n\\tError: Failed to format: %s as: %s\\n" \
+				"${HOME_PART}" "${FSTYPE}" ;
+			exit 1 ;
+		}
+
+		if_log mkfs.f2fs -O "${F2FS_DEFAULTS}" "${ROOT_PART}" || \
+		{
+			printf "\\n\\tError: Failed to format: %s as: %s\\n" \
+				"${ROOT_PART}" "${FSTYPE}" ;
+			exit 1 ;
+		}
 	elif [[ "${FSTYPE}" == "XFS" ]] ; then
-		1> /dev/null mkfs.xfs "${BOOT_PART}"
-		1> /dev/null mkfs.xfs "${HOME_PART}"
-		1> /dev/null mkfs.xfs "${ROOT_PART}"
+		if_log mkfs.xfs "${BOOT_PART}" || \
+		{
+			printf "\\n\\tError: Failed to format: %s as: %s\\n" \
+				"${BOOT_PART}" "${FSTYPE}" ;
+			exit 1 ;
+		}
+
+		if_log mkfs.xfs "${HOME_PART}" || \
+		{
+			printf "\\n\\tError: Failed to format: %s as: %s\\n" \
+				"${HOME_PART}" "${FSTYPE}" ;
+			exit 1 ;
+		}
+
+		if_log mkfs.xfs "${ROOT_PART}" || \
+		{
+			printf "\\n\\tError: Failed to format: %s as: %s\\n" \
+				"${ROOT_PART}" "${FSTYPE}" ;
+			exit 1 ;
+		}
 	fi
 
 	printf "\\tDone.\\n"

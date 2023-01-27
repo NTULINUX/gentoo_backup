@@ -24,7 +24,7 @@ for (( i=0 ; i < "${#FLAGS[@]}" ; i++ )) ; do
 
 	lscpu | grep "${FLAGS[$i]}" >> /dev/null 2>&1 || \
 	{
-		printf "\\tERROR: Missing: %s\\n" "${FLAGS[$i]}" ;
+		printf "\\tError: Missing: %s\\n" "${FLAGS[$i]}" ;
 		exit 1 ;
 	}
 done
