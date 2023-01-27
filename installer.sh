@@ -641,38 +641,6 @@ choose_filesystem()
 	printf "\\n\\tSelected filesystem: %s\\n" "${FSTYPE}"
 }
 
-wipe_drive()
-{
-	printf "\\n\\tTarget installation media to erase: %s\\n
-\\tAllowing 10 seconds to ensure correct device has been selected.
-\\tPress Control+C to cancel.\\n
-\\t10.\\n" "${ENTIRE_DRIVE}" ; sleep 1
-	printf "\\t9.\\n" ; sleep 1
-	printf "\\t8.\\n" ; sleep 1
-	printf "\\t7.\\n" ; sleep 1
-	printf "\\t6.\\n" ; sleep 1
-	printf "\\t5.\\n" ; sleep 1
-	printf "\\t4.\\n" ; sleep 1
-	printf "\\t3.\\n" ; sleep 1
-	printf "\\t2.\\n" ; sleep 1
-	printf "\\t1.\\n" ; sleep 1
-
-	printf "\\n\\tRemoving data on: %s\\n" "${ENTIRE_DRIVE}"
-
-	if_log wipefs -a -f "${ENTIRE_DRIVE}" ; printf "\\n"
-
-	if [[ "${ENTIRE_DRIVE}" == "/dev/nvme"* ]] ; then
-		if_log blkdiscard "${ENTIRE_DRIVE}"
-	else
-		if_log dd if=/dev/zero of="${ENTIRE_DRIVE}" bs=8M count=16 \
-			oflag=sync status=progress
-	fi
-
-	sleep 5 && sync
-
-	printf "\\tDone.\\n"
-}
-
 partition_sizes()
 {
 	# Use sane defaults for both legacy BIOS and UEFI
@@ -726,6 +694,38 @@ partition_sizes()
 			"${ROOT_PART_SIZE}"
 		exit 1
 	fi
+}
+
+wipe_drive()
+{
+	printf "\\n\\tTarget installation media to erase: %s\\n
+\\tAllowing 10 seconds to ensure correct device has been selected.
+\\tPress Control+C to cancel.\\n
+\\t10.\\n" "${ENTIRE_DRIVE}" ; sleep 1
+	printf "\\t9.\\n" ; sleep 1
+	printf "\\t8.\\n" ; sleep 1
+	printf "\\t7.\\n" ; sleep 1
+	printf "\\t6.\\n" ; sleep 1
+	printf "\\t5.\\n" ; sleep 1
+	printf "\\t4.\\n" ; sleep 1
+	printf "\\t3.\\n" ; sleep 1
+	printf "\\t2.\\n" ; sleep 1
+	printf "\\t1.\\n" ; sleep 1
+
+	printf "\\n\\tRemoving data on: %s\\n" "${ENTIRE_DRIVE}"
+
+	if_log wipefs -a -f "${ENTIRE_DRIVE}" ; printf "\\n"
+
+	if [[ "${ENTIRE_DRIVE}" == "/dev/nvme"* ]] ; then
+		if_log blkdiscard "${ENTIRE_DRIVE}"
+	else
+		if_log dd if=/dev/zero of="${ENTIRE_DRIVE}" bs=8M count=16 \
+			oflag=sync status=progress
+	fi
+
+	sleep 5 && sync
+
+	printf "\\tDone.\\n"
 }
 
 partition_drive()
@@ -1406,9 +1406,9 @@ check_drive
 
 choose_filesystem
 
-wipe_drive
-
 partition_sizes
+
+wipe_drive
 
 partition_drive
 
