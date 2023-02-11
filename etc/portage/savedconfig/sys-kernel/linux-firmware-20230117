@@ -1,4 +1,3 @@
-# Remove files that shall not be installed from this list.
 amd/amd_sev_fam17h_model0xh.sbin
 amd/amd_sev_fam17h_model3xh.sbin
 amd/amd_sev_fam19h_model0xh.sbin
@@ -64,6 +63,7 @@ amdgpu/raven2_gpu_info.bin
 amdgpu/raven_vcn.bin
 amdgpu/vega20_mec.bin
 amdgpu/raven_asd.bin
+amdgpu/smu_13_0_7.bin
 amdgpu/vega12_asd.bin
 amdgpu/navi14_asd.bin
 amdgpu/raven_pfp.bin
@@ -101,6 +101,7 @@ amdgpu/hainan_ce.bin
 amdgpu/green_sardine_mec2.bin
 amdgpu/arcturus_rlc.bin
 amdgpu/kaveri_rlc.bin
+amdgpu/dcn_3_2_1_dmcub.bin
 amdgpu/gc_10_3_7_mec.bin
 amdgpu/navi12_asd.bin
 amdgpu/vangogh_dmcub.bin
@@ -192,6 +193,7 @@ amdgpu/verde_k_smc.bin
 amdgpu/aldebaran_sos.bin
 amdgpu/psp_13_0_8_asd.bin
 amdgpu/arcturus_mec.bin
+amdgpu/psp_13_0_7_ta.bin
 amdgpu/renoir_ce.bin
 amdgpu/vega10_rlc.bin
 amdgpu/bonaire_mc.bin
@@ -248,10 +250,12 @@ amdgpu/polaris10_mec2.bin
 amdgpu/vegam_smc.bin
 amdgpu/navy_flounder_pfp.bin
 amdgpu/navi10_gpu_info.bin
+amdgpu/sdma_6_0_2.bin
 amdgpu/vega20_me.bin
 amdgpu/tonga_mec.bin
 amdgpu/polaris10_rlc.bin
 amdgpu/hainan_smc.bin
+amdgpu/gc_11_0_2_pfp.bin
 amdgpu/dimgrey_cavefish_smc.bin
 amdgpu/yellow_carp_pfp.bin
 amdgpu/sienna_cichlid_vcn.bin
@@ -270,6 +274,7 @@ amdgpu/navi12_mec2.bin
 amdgpu/topaz_mc.bin
 amdgpu/kabini_me.bin
 amdgpu/renoir_pfp.bin
+amdgpu/gc_11_0_2_mec.bin
 amdgpu/aldebaran_vcn.bin
 amdgpu/vega20_mec2.bin
 amdgpu/vega12_sos.bin
@@ -381,6 +386,7 @@ amdgpu/beige_goby_pfp.bin
 amdgpu/carrizo_sdma.bin
 amdgpu/carrizo_mec2.bin
 amdgpu/polaris12_rlc.bin
+amdgpu/gc_11_0_2_imu.bin
 amdgpu/vega20_vce.bin
 amdgpu/stoney_sdma.bin
 amdgpu/aldebaran_sjt_mec2.bin
@@ -406,9 +412,11 @@ amdgpu/gc_11_0_0_pfp.bin
 amdgpu/raven_gpu_info.bin
 amdgpu/fiji_mec.bin
 amdgpu/topaz_sdma1.bin
+amdgpu/gc_11_0_2_me.bin
 amdgpu/navi14_me_wks.bin
 amdgpu/beige_goby_sos.bin
 amdgpu/oland_uvd.bin
+amdgpu/psp_13_0_7_sos.bin
 amdgpu/bonaire_me.bin
 amdgpu/polaris10_sdma1.bin
 amdgpu/bonaire_k_smc.bin
@@ -455,13 +463,16 @@ amdgpu/arcturus_mec2.bin
 amdgpu/vangogh_rlc.bin
 amdgpu/arcturus_sdma.bin
 amdgpu/polaris10_k_smc.bin
+amdgpu/gc_11_0_2_rlc.bin
 amdgpu/polaris11_k_mc.bin
+amdgpu/gc_11_0_2_mes1.bin
 amdgpu/navy_flounder_me.bin
 amdgpu/beige_goby_mec.bin
 amdgpu/green_sardine_me.bin
 amdgpu/polaris11_rlc.bin
 amdgpu/polaris10_pfp_2.bin
 amdgpu/vega10_ce.bin
+amdgpu/vcn_4_0_4.bin
 amdgpu/vegam_mec2.bin
 amdgpu/stoney_me.bin
 amdgpu/hainan_pfp.bin
@@ -474,6 +485,7 @@ amdgpu/polaris10_k_mc.bin
 amdgpu/hainan_mc.bin
 amdgpu/fiji_smc.bin
 amdgpu/dcn_3_1_5_dmcub.bin
+amdgpu/gc_11_0_2_mes.bin
 amdgpu/kabini_rlc.bin
 amdgpu/vega12_uvd.bin
 amdgpu/vcn_3_1_2.bin

@@ -1,4 +1,5 @@
 # Accept/Restrict keywords
 app-office/libreoffice -~amd64
 media-gfx/gimp **
+sys-libs/glibc **
 sys-boot/syslinux **
