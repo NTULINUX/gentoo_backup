@@ -1,9 +1,7 @@
 app-admin/checksec
 app-admin/doas
-app-antivirus/clamtk
 app-arch/lz4
 app-arch/lzop
-app-arch/p7zip
 app-arch/unrar
 app-arch/xarchiver
 app-editors/featherpad
@@ -29,7 +27,6 @@ dev-util/geany
 dev-util/rt-tests
 dev-vcs/git
 gnome-extra/nm-applet
-kde-apps/k3b
 kde-apps/okular
 kde-frameworks/breeze-icons
 lxqt-base/lxqt-meta
@@ -43,7 +40,6 @@ media-sound/cadence
 media-video/guvcview
 media-video/libva-utils
 media-video/mpv
-media-video/openshot
 media-video/vlc
 net-analyzer/tcpdump
 net-analyzer/wireshark
@@ -60,7 +56,6 @@ sys-apps/smartmontools
 sys-apps/usbutils
 sys-boot/grub
 sys-boot/syslinux
-sys-devel/bc
 sys-devel/clang
 sys-fs/btrfs-progs
 sys-fs/dosfstools

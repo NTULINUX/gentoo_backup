@@ -11,6 +11,7 @@ dev-libs/openssl:0/3
 =sci-electronics/linuxcnc-*9999*
 sys-apps/systemd-tmpfiles
 sys-apps/systemd-utils
+>=sys-apps/util-linux-2.39
 =sys-boot/grub-*rc*
 =sys-boot/syslinux-*pre*
 =virtual/perl-*-*rc*

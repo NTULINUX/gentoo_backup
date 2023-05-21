@@ -1,5 +1,11 @@
 # Accept/Restrict keywords
 app-office/libreoffice -~amd64
 media-gfx/gimp **
-sys-libs/glibc **
 sys-boot/syslinux **
+
+#
+# BUG
+#
+
+# No template named 'auto_ptr' in namespace 'std'
+media-libs/gexiv2 -~amd64

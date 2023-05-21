@@ -17,3 +17,6 @@ sys-devel/clang-common::ntu_overlay
 =*/*-*_beta*
 =*/*-*_pre*
 =*/*-*_rc*
+
+# Prevent frequent, unnecessary GCC updates (avoid snapshots)
+=sys-devel/gcc-*_p*

@@ -2,9 +2,7 @@
 # Package-specific USE flags
 #
 
-app-antivirus/clamav rar
 app-arch/libarchive lzo lz4
-app-arch/p7zip rar
 app-arch/tar minimal
 app-crypt/gcr gtk
 app-editors/nano -spell
@@ -14,7 +12,7 @@ app-text/poppler cairo qt5 png tiff
 app-text/xmlto text
 dev-libs/libdbusmenu gtk3
 dev-libs/libpcre2 pcre32
-dev-libs/libsodium -verify-sig
+dev-libs/sexp static-libs
 dev-python/PyQt5 declarative designer gui multimedia printsupport svg webchannel widgets
 dev-qt/qtgui jpeg
 dev-qt/qtmultimedia widgets
@@ -25,9 +23,8 @@ kde-apps/kate-addons -projects -snippets
 kde-frameworks/kfilemetadata taglib
 lxqt-base/lxqt-meta terminal
 media-gfx/blender -oidn -osl
-media-gfx/fontforge -X
 media-gfx/gimp postscript webp
-media-gfx/inkscape jpeg graphicsmagick postscript svg2
+media-gfx/inkscape jpeg postscript svg2
 media-gfx/krita color-management pdf vc
 media-libs/babl lcms
 media-libs/freetype brotli
@@ -44,7 +41,6 @@ media-video/guvcview qt5
 media-video/vlc aom live
 net-analyzer/wireshark -dftest -minizip -netlink -opus -randpkt -randpktdump -plugins -sharkd -text2pcap -tshark -udpdump
 net-libs/libpsl -icu
-net-libs/zeromq drafts
 net-print/cups-filters jpeg png
 net-print/gutenprint gtk
 sys-apps/smartmontools -caps
@@ -52,6 +48,7 @@ sys-auth/polkit daemon
 sys-boot/grub -fonts -themes -truetype
 sys-fs/cryptsetup -gcrypt nettle
 sys-fs/udisks -elogind
+sys-libs/llvm-libunwind static-libs
 sys-libs/zlib minizip
 sys-process/lsof rpc
 www-client/links -X
