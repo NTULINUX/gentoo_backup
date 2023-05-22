@@ -21,7 +21,7 @@ ROOT_MOUNT="/mnt/gentoo-cnc"
 
 verbose_prompt()
 {
-	printf "\\n\\tEnable verbose installation?
+	printf "\\n\\tEnable verbose installation?\\n
 \\tThis may help diagnose problems with installation but may produce
 \\texcessive terminal scrollback.\\n
 \\tValid options:
