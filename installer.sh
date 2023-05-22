@@ -24,7 +24,7 @@ verbose_prompt()
 	printf "\\n\\tEnable verbose installation?\\n
 \\tThis may help diagnose problems with installation but may produce
 \\texcessive terminal scrollback.\\n
-\\tValid options:
+\\tValid options (Enter for default):
 \\t\\tYES/yes
 \\t\\tNO/no (default)\\n\\n"
 
@@ -377,7 +377,7 @@ legacy_or_uefi()
 \\033[0;33m
 \\tIMPORTANT:
 \\tPlease be sure CSM is enabled (if applicable) in BIOS before continuing!
-\\033[0m\\n" ; sleep 5
+\\033[0m\\n" ; sleep 3
 	elif [[ "${INSTALL_TYPE_ARG}" == "UEFI" || \
 		"${INSTALL_TYPE_ARG}" == "uefi" ]]
 	then
@@ -386,7 +386,7 @@ legacy_or_uefi()
 \\033[0;33m
 \\tIMPORTANT:
 \\tPlease be sure CSM is disabled in BIOS before continuing!
-\\033[0m\\n" ; sleep 5
+\\033[0m\\n" ; sleep 3
 
 		printf "\\tEnsuring system has booted with UEFI Runtime Services...\\n"
 		# This method will not work on ancient kernels or those built
@@ -440,7 +440,7 @@ removable_prompt()
 \\tPARTUUIDs can be more annoying, but make it easier to switch systems later on.
 \\tIf this is a device which will be used only on this system, say no. (default)
 \\tSee: grub-install(8)\\n
-\\tValid options:
+\\tValid options (Enter for default):
 \\t\\tYES/yes
 \\t\\tNO/no (default)\\n\\n"
 
@@ -451,8 +451,10 @@ partuuid_prompt()
 {
 	printf "\\n\\tWould you like to use PARTUUIDs anyway?\\n
 \\tThis can help to avoid problems if/when drive letters get swapped around
-\\tbut may cause GRUB and fstab entries to be less human-readable.\\n
-\\tValid options:
+\\tbut may cause fstab entries to be less human-readable.
+\\tThis option does not effect GRUB. For that, you must modify:
+\\t/etc/default/grub Option: GRUB_DISABLE_LINUX_PARTUUID after install.
+\\tValid options (Enter for default):
 \\t\\tYES/yes
 \\t\\tNO/no (default)\\n\\n"
 
@@ -597,7 +599,7 @@ choose_filesystem()
 {
 	printf "\\n\\tPlease select your choice of filesystem.
 \\tFor NVMe and SSDs, F2FS may give best performance.\\n
-\\tValid options:
+\\tValid options (Enter for default):
 \\t\\tBTRFS/btrfs
 \\t\\tEXT4/ext4 (default for non-NVMe drives)
 \\t\\tF2FS/f2fs (default for NVMe drives)
