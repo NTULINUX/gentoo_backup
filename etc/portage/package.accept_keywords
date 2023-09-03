@@ -1,7 +1,6 @@
 # Accept/Restrict keywords
 app-office/libreoffice -~amd64
 media-gfx/gimp **
-sys-boot/syslinux **
 
 #
 # BUG

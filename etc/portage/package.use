@@ -12,7 +12,7 @@ app-text/poppler cairo qt5 png tiff
 app-text/xmlto text
 dev-libs/libdbusmenu gtk3
 dev-libs/libpcre2 pcre32
-dev-libs/sexp static-libs
+dev-libs/sexpp static-libs
 dev-python/PyQt5 declarative designer gui multimedia printsupport svg webchannel widgets
 dev-qt/qtgui jpeg
 dev-qt/qtmultimedia widgets
