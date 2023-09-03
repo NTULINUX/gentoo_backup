@@ -436,8 +436,6 @@ removable_prompt()
 {
 	printf "\\n\\tIs this a removable device such as a flash drive?\\n
 \\tThis is used to determine how GRUB will be installed (--removable)
-\\tas well as if PARTUUIDs should be used instead of device names.
-\\tPARTUUIDs can be more annoying, but make it easier to switch systems later on.
 \\tIf this is a device which will be used only on this system, say no. (default)
 \\tSee: grub-install(8)\\n
 \\tValid options (Enter for default):
@@ -445,20 +443,6 @@ removable_prompt()
 \\t\\tNO/no (default)\\n\\n"
 
 	read -r "REMOVABLE_ARG" ; printf "\\n"
-}
-
-partuuid_prompt()
-{
-	printf "\\n\\tWould you like to use PARTUUIDs anyway?\\n
-\\tThis can help to avoid problems if/when drive letters get swapped around
-\\tbut may cause fstab entries to be less human-readable.
-\\tThis option does not effect GRUB. For that, you must modify:
-\\t/etc/default/grub Option: GRUB_DISABLE_LINUX_PARTUUID after install.
-\\tValid options (Enter for default):
-\\t\\tYES/yes
-\\t\\tNO/no (default)\\n\\n"
-
-	read -r "USE_PARTUUIDS_ARG" ; printf "\\n"
 }
 
 check_drive()
@@ -537,7 +521,6 @@ check_drive()
 			"${REMOVABLE_ARG}" == "yes" ]]
 		then
 			REMOVABLE="TRUE"
-			USE_PARTUUIDS="TRUE"
 			printf "\\t%s: Removable media.
 \\tWill pass \`--removable\` to UEFI GRUB installation.\\n" "${ENTIRE_DRIVE}"
 		elif [[ "${REMOVABLE_ARG}" == "N" || \
@@ -559,39 +542,6 @@ check_drive()
 	else
 		REMOVABLE="FALSE"
 		printf "\\n\\tRemovable media not applicable.\\n"
-	fi
-
-	if [[ "${REMOVABLE}" == "FALSE" ]] ; then
-		partuuid_prompt
-
-		if [[ "${USE_PARTUUIDS_ARG}" == "Y" || \
-			"${USE_PARTUUIDS_ARG}" == "YES" || \
-			"${USE_PARTUUIDS_ARG}" == "y" || \
-			"${USE_PARTUUIDS_ARG}" == "yes" ]]
-		then
-			USE_PARTUUIDS="TRUE"
-			printf "\\tUsing PARTUUIDs instead of drive letters.\\n"
-		elif [[ "${USE_PARTUUIDS_ARG}" == "N" || \
-			"${USE_PARTUUIDS_ARG}" == "NO" || \
-			"${USE_PARTUUIDS_ARG}" == "n" || \
-			"${USE_PARTUUIDS_ARG}" == "no" || \
-			"${USE_PARTUUIDS_ARG}" == "DEFAULT" || \
-			"${USE_PARTUUIDS_ARG}" == "default" || \
-			-z "${USE_PARTUUIDS_ARG}" ]]
-		then
-			USE_PARTUUIDS="FALSE"
-			if [[ "${ENTIRE_DRIVE}" == "/dev/nvme"* ]] ; then
-				printf "\\tUsing: %s instead of PARTUUIDs.\\n" \
-					"${ENTIRE_DRIVE}{p1,p2,p3,p4}"
-			else
-				printf "\\tUsing: %s instead of PARTUUIDs.\\n" \
-					"${ENTIRE_DRIVE}{1,2,3,4}"
-			fi
-		else
-			printf "\\n\\tError: Invalid selection: %s\\n" \
-				"${USE_PARTUUIDS_ARG}"
-			exit 1
-		fi
 	fi
 }
 
@@ -794,44 +744,43 @@ partition_drive()
 	HOME_PART="${ENTIRE_DRIVE}${P}3"
 	ROOT_PART="${ENTIRE_DRIVE}${P}4"
 
-	# Required for properly parsing PARTUUIDs, not a bad idea anyway
+	# Required for properly parsing PARTUUIDs
 	sleep 5 ; sync ; partprobe
 
-	if [[ "${USE_PARTUUIDS}" == "TRUE" ]] ; then
-		if [[ "${INSTALL_TYPE}" == "UEFI" ]] ; then
-			EFI_PARTUUID=$(lsblk -n -o PARTUUID "${EFI_PART}")
+	# Make sure all PARTUUIDs are valid before proceeding
 
-			# Make sure all PARTUUIDs are valid before proceeding
-			if [[ $(grep -o "-" <<< "${EFI_PARTUUID}" | wc -l) -ne 4 ]] ; then
-				printf "\\n\\tError: Invalid PARTUUID on: %s\\n" \
-					"${EFI_PART}"
-				exit 1
-			fi
-		fi
+	if [[ "${INSTALL_TYPE}" == "UEFI" ]] ; then
+		EFI_PARTUUID=$(lsblk -n -o PARTUUID "${EFI_PART}")
 
-		BOOT_PARTUUID=$(lsblk -n -o PARTUUID "${BOOT_PART}")
-
-		if [[ $(grep -o "-" <<< "${BOOT_PARTUUID}" | wc -l) -ne 4 ]] ; then
+		if [[ $(grep -o "-" <<< "${EFI_PARTUUID}" | wc -l) -ne 4 ]] ; then
 			printf "\\n\\tError: Invalid PARTUUID on: %s\\n" \
-				"${BOOT_PART}"
+				"${EFI_PART}"
 			exit 1
 		fi
+	fi
 
-		HOME_PARTUUID=$(lsblk -n -o PARTUUID "${HOME_PART}")
+	BOOT_PARTUUID=$(lsblk -n -o PARTUUID "${BOOT_PART}")
 
-		if [[ $(grep -o "-" <<< "${HOME_PARTUUID}" | wc -l) -ne 4 ]] ; then
-			printf "\\n\\tError: Invalid PARTUUID on: %s\\n" \
-				"${HOME_PART}"
-			exit 1
-		fi
+	if [[ $(grep -o "-" <<< "${BOOT_PARTUUID}" | wc -l) -ne 4 ]] ; then
+		printf "\\n\\tError: Invalid PARTUUID on: %s\\n" \
+			"${BOOT_PART}"
+		exit 1
+	fi
 
-		ROOT_PARTUUID=$(lsblk -n -o PARTUUID "${ROOT_PART}")
+	HOME_PARTUUID=$(lsblk -n -o PARTUUID "${HOME_PART}")
 
-		if [[ $(grep -o "-" <<< "${ROOT_PARTUUID}" | wc -l) -ne 4 ]] ; then
-			printf "\\n\\tError: Invalid PARTUUID on: %s\\n" \
-				"${ROOT_PART}"
-			exit 1
-		fi
+	if [[ $(grep -o "-" <<< "${HOME_PARTUUID}" | wc -l) -ne 4 ]] ; then
+		printf "\\n\\tError: Invalid PARTUUID on: %s\\n" \
+			"${HOME_PART}"
+		exit 1
+	fi
+
+	ROOT_PARTUUID=$(lsblk -n -o PARTUUID "${ROOT_PART}")
+
+	if [[ $(grep -o "-" <<< "${ROOT_PARTUUID}" | wc -l) -ne 4 ]] ; then
+		printf "\\n\\tError: Invalid PARTUUID on: %s\\n" \
+			"${ROOT_PART}"
+		exit 1
 	fi
 
 	printf "\\n\\tDone.\\n"
@@ -1121,177 +1070,93 @@ generate_fstab()
 # See the manpage fstab(5) for more information.
 #\\n" &> "${ROOT_MOUNT}/etc/fstab"
 
-	if [[ "${USE_PARTUUIDS}" == "TRUE" ]] ; then
-		printf "%b\\n" \
+	printf "%b\\n" \
 "# <fs>\\t\\t\\t\\t\\t\\t<mountpoint>\\t<type>\\t<opts>\\t\\t<dump/pass>" \
-			>> "${ROOT_MOUNT}/etc/fstab"
+	>> "${ROOT_MOUNT}/etc/fstab"
 
-		# PARTUUIDs + LEGACY + BTRFS
-		if [[ "${INSTALL_TYPE}" == "LEGACY" && \
-			"${FSTYPE}" == "BTRFS" ]]
-		then
-			printf "%b\\n" \
+	# LEGACY + BTRFS
+	if [[ "${INSTALL_TYPE}" == "LEGACY" && \
+		"${FSTYPE}" == "BTRFS" ]]
+	then
+		printf "%b\\n" \
 "PARTUUID=${BOOT_PARTUUID}\\t/boot\\t\\tbtrfs\\tdefaults\\t0\\t2
 PARTUUID=${HOME_PARTUUID}\\t/home\\t\\tbtrfs\\tdefaults\\t0\\t2
 PARTUUID=${ROOT_PARTUUID}\\t/\\t\\tbtrfs\\tdefaults\\t0\\t1" \
 	>> "${ROOT_MOUNT}/etc/fstab"
 
-		# PARTUUIDs + LEGACY + EXT4
-		elif [[ "${INSTALL_TYPE}" == "LEGACY" && \
-			"${FSTYPE}" == "EXT4" ]]
-		then
-			printf "%b\\n" \
+	# LEGACY + EXT4
+	elif [[ "${INSTALL_TYPE}" == "LEGACY" && \
+		"${FSTYPE}" == "EXT4" ]]
+	then
+		printf "%b\\n" \
 "PARTUUID=${BOOT_PARTUUID}\\t/boot\\t\\text4\\tdefaults\\t0\\t2
 PARTUUID=${HOME_PARTUUID}\\t/home\\t\\text4\\tdefaults\\t0\\t2
 PARTUUID=${ROOT_PARTUUID}\\t/\\t\\text4\\tdefaults\\t0\\t1" \
 	>> "${ROOT_MOUNT}/etc/fstab"
 
-		# PARTUUIDs + LEGACY + F2FS
-		elif [[ "${INSTALL_TYPE}" == "LEGACY" && \
-			"${FSTYPE}" == "F2FS" ]]
-		then
-			printf "%b\\n" \
+	# LEGACY + F2FS
+	elif [[ "${INSTALL_TYPE}" == "LEGACY" && \
+		"${FSTYPE}" == "F2FS" ]]
+	then
+		printf "%b\\n" \
 "PARTUUID=${BOOT_PARTUUID}\\t/boot\\t\\tf2fs\\t${F2FS_MOUNT_OPTS}\\t0\\t2
 PARTUUID=${HOME_PARTUUID}\\t/home\\t\\tf2fs\\t${F2FS_MOUNT_OPTS}\\t0\\t2
 PARTUUID=${ROOT_PARTUUID}\\t/\\t\\tf2fs\\t${F2FS_MOUNT_OPTS}\\t0\\t1" \
 	>> "${ROOT_MOUNT}/etc/fstab"
 
-		# PARTUUIDs + LEGACY + XFS
-		elif [[ "${INSTALL_TYPE}" == "LEGACY" && \
-			"${FSTYPE}" == "XFS" ]]
-		then
-			printf "%b\\n" \
+	# LEGACY + XFS
+	elif [[ "${INSTALL_TYPE}" == "LEGACY" && \
+		"${FSTYPE}" == "XFS" ]]
+	then
+		printf "%b\\n" \
 "PARTUUID=${BOOT_PARTUUID}\\t/boot\\t\\txfs\\tdefaults\\t0\\t2
 PARTUUID=${HOME_PARTUUID}\\t/home\\t\\txfs\\tdefaults\\t0\\t2
 PARTUUID=${ROOT_PARTUUID}\\t/\\t\\txfs\\tdefaults\\t0\\t1" \
 	>> "${ROOT_MOUNT}/etc/fstab"
 
-		# PARTUUIDs + UEFI + BTRFS
-		elif [[ "${INSTALL_TYPE}" == "UEFI" && \
-			"${FSTYPE}" == "BTRFS" ]]
-		then
-			printf "%b\\n" \
+	# UEFI + BTRFS
+	elif [[ "${INSTALL_TYPE}" == "UEFI" && \
+		"${FSTYPE}" == "BTRFS" ]]
+	then
+		printf "%b\\n" \
 "PARTUUID=${EFI_PARTUUID}\\t/efi\\t\\tvfat\\tdefaults\\t0\\t2
 PARTUUID=${BOOT_PARTUUID}\\t/boot\\t\\tbtrfs\\tdefaults\\t0\\t2
 PARTUUID=${HOME_PARTUUID}\\t/home\\t\\tbtrfs\\tdefaults\\t0\\t2
 PARTUUID=${ROOT_PARTUUID}\\t/\\t\\tbtrfs\\tdefaults\\t0\\t1" \
 	>> "${ROOT_MOUNT}/etc/fstab"
 
-		# PARTUUIDs + UEFI + EXT4
-		elif [[ "${INSTALL_TYPE}" == "UEFI" && \
-			"${FSTYPE}" == "EXT4" ]]
-		then
-			printf "%b\\n" \
+	# UEFI + EXT4
+	elif [[ "${INSTALL_TYPE}" == "UEFI" && \
+		"${FSTYPE}" == "EXT4" ]]
+	then
+		printf "%b\\n" \
 "PARTUUID=${EFI_PARTUUID}\\t/efi\\t\\tvfat\\tdefaults\\t0\\t2
 PARTUUID=${BOOT_PARTUUID}\\t/boot\\t\\text4\\tdefaults\\t0\\t2
 PARTUUID=${HOME_PARTUUID}\\t/home\\t\\text4\\tdefaults\\t0\\t2
 PARTUUID=${ROOT_PARTUUID}\\t/\\t\\text4\\tdefaults\\t0\\t1" \
 	>> "${ROOT_MOUNT}/etc/fstab"
 
-		# PARTUUIDs + UEFI + F2FS
-		elif [[ "${INSTALL_TYPE}" == "UEFI" && \
-			"${FSTYPE}" == "F2FS" ]]
-		then
-			printf "%b\\n" \
+	# UEFI + F2FS
+	elif [[ "${INSTALL_TYPE}" == "UEFI" && \
+		"${FSTYPE}" == "F2FS" ]]
+	then
+		printf "%b\\n" \
 "PARTUUID=${EFI_PARTUUID}\\t/efi\\t\\tvfat\\tdefaults\\t0\\t2
 PARTUUID=${BOOT_PARTUUID}\\t/boot\\t\\tf2fs\\t${F2FS_MOUNT_OPTS}\\t0\\t2
 PARTUUID=${HOME_PARTUUID}\\t/home\\t\\tf2fs\\t${F2FS_MOUNT_OPTS}\\t0\\t2
 PARTUUID=${ROOT_PARTUUID}\\t/\\t\\tf2fs\\t${F2FS_MOUNT_OPTS}\\t0\\t1" \
 	>> "${ROOT_MOUNT}/etc/fstab"
 
-		# PARTUUIDs + UEFI + XFS
-		elif [[ "${INSTALL_TYPE}" == "UEFI" && \
-			"${FSTYPE}" == "XFS" ]]
-		then
-			printf "%b\\n" \
+	# UEFI + XFS
+	elif [[ "${INSTALL_TYPE}" == "UEFI" && \
+		"${FSTYPE}" == "XFS" ]]
+	then
+		printf "%b\\n" \
 "PARTUUID=${EFI_PARTUUID}\\t/efi\\t\\tvfat\\tdefaults\\t0\\t2
 PARTUUID=${BOOT_PARTUUID}\\t/boot\\t\\txfs\\tdefaults\\t0\\t2
 PARTUUID=${HOME_PARTUUID}\\t/home\\t\\txfs\\tdefaults\\t0\\t2
 PARTUUID=${ROOT_PARTUUID}\\t/\\t\\txfs\\tdefaults\\t0\\t1" \
 	>> "${ROOT_MOUNT}/etc/fstab"
-		fi
-
-	elif [[ "${USE_PARTUUIDS}" == "FALSE" ]] ; then
-		printf "%b\\n" \
-"# <fs>\\t\\t<mountpoint>\\t<type>\\t<opts>\\t\\t<dump/pass>" \
-			>> "${ROOT_MOUNT}/etc/fstab"
-
-		# LEGACY + BTRFS (no PARTUUIDs)
-		if [[ "${INSTALL_TYPE}" == "LEGACY" && \
-			"${FSTYPE}" == "BTRFS" ]]
-		then
-			printf "%b\\n" \
-"${BOOT_PART}\\t/boot\\tbtrfs\\tdefaults\\t0\\t2
-${HOME_PART}\\t/home\\tbtrfs\\tdefaults\\t0\\t2
-${ROOT_PART}\\t/\\tbtrfs\\tdefaults\\t0\\t1" >> "${ROOT_MOUNT}/etc/fstab"
-
-		# LEGACY + EXT4 (no PARTUUIDs)
-		elif [[ "${INSTALL_TYPE}" == "LEGACY" && \
-			"${FSTYPE}" == "EXT4" ]]
-		then
-			printf "%b\\n" \
-"${BOOT_PART}\\t/boot\\text4\\tdefaults\\t0\\t2
-${HOME_PART}\\t/home\\text4\\tdefaults\\t0\\t2
-${ROOT_PART}\\t/\\text4\\tdefaults\\t0\\t1" >> "${ROOT_MOUNT}/etc/fstab"
-
-		# LEGACY + F2FS (no PARTUUIDs)
-		elif [[ "${INSTALL_TYPE}" == "LEGACY" && \
-			"${FSTYPE}" == "F2FS" ]]
-		then
-			printf "%b\\n" \
-"${BOOT_PART}\\t/boot\\tf2fs\\t${F2FS_MOUNT_OPTS}\\t0\\t2
-${HOME_PART}\\t/home\\tf2fs\\t${F2FS_MOUNT_OPTS}\\t0\\t2
-${ROOT_PART}\\t/\\tf2fs\\t${F2FS_MOUNT_OPTS}\\t0\\t1" >> "${ROOT_MOUNT}/etc/fstab"
-
-		# LEGACY + XFS (no PARTUUIDs)
-		elif [[ "${INSTALL_TYPE}" == "LEGACY" && \
-			"${FSTYPE}" == "XFS" ]]
-		then
-			printf "%b\\n" \
-"${BOOT_PART}\\t/boot\\txfs\\tdefaults\\t0\\t2
-${HOME_PART}\\t/home\\txfs\\tdefaults\\t0\\t2
-${ROOT_PART}\\t/\\txfs\\tdefaults\\t0\\t1" >> "${ROOT_MOUNT}/etc/fstab"
-
-		# UEFI + BTRFS (no PARTUUIDs)
-		elif [[ "${INSTALL_TYPE}" == "UEFI" && \
-			"${FSTYPE}" == "BTRFS" ]]
-		then
-			printf "%b\\n" \
-"${EFI_PART}\\t/efi\\tvfat\\tdefaults\\t0\\t2
-${BOOT_PART}\\t/boot\\tbtrfs\\tdefaults\\t0\\t2
-${HOME_PART}\\t/home\\tbtrfs\\tdefaults\\t0\\t2
-${ROOT_PART}\\t/\\tbtrfs\\tdefaults\\t0\\t1" >> "${ROOT_MOUNT}/etc/fstab"
-
-		# UEFI + EXT4 (no PARTUUIDs)
-		elif [[ "${INSTALL_TYPE}" == "UEFI" && \
-			"${FSTYPE}" == "EXT4" ]]
-		then
-			printf "%b\\n" \
-"${EFI_PART}\\t/efi\\tvfat\\tdefaults\\t0\\t2
-${BOOT_PART}\\t/boot\\text4\\tdefaults\\t0\\t2
-${HOME_PART}\\t/home\\text4\\tdefaults\\t0\\t2
-${ROOT_PART}\\t/\\text4\\tdefaults\\t0\\t1" >> "${ROOT_MOUNT}/etc/fstab"
-
-		# UEFI + F2FS (no PARTUUIDs)
-		elif [[ "${INSTALL_TYPE}" == "UEFI" && \
-			"${FSTYPE}" == "F2FS" ]]
-		then
-			printf "%b\\n" \
-"${EFI_PART}\\t/efi\\tvfat\\tdefaults\\t0\\t2
-${BOOT_PART}\\t/boot\\tf2fs\\t${F2FS_MOUNT_OPTS}\\t0\\t2
-${HOME_PART}\\t/home\\tf2fs\\t${F2FS_MOUNT_OPTS}\\t0\\t2
-${ROOT_PART}\\t/\\tf2fs\\t${F2FS_MOUNT_OPTS}\\t0\\t1" >> "${ROOT_MOUNT}/etc/fstab"
-
-		# UEFI + XFS (no PARTUUIDs)
-		elif [[ "${INSTALL_TYPE}" == "UEFI" && \
-			"${FSTYPE}" == "XFS" ]]
-		then
-			printf "%b\\n" \
-"${EFI_PART}\\t/efi\\tvfat\\tdefaults\\t0\\t2
-${BOOT_PART}\\t/boot\\txfs\\tdefaults\\t0\\t2
-${HOME_PART}\\t/home\\txfs\\tdefaults\\t0\\t2
-${ROOT_PART}\\t/\\txfs\\tdefaults\\t0\\t1" >> "${ROOT_MOUNT}/etc/fstab"
-		fi
 	fi
 }
 
