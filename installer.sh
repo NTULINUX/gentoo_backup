@@ -19,6 +19,11 @@ fi
 
 ROOT_MOUNT="/mnt/gentoo-cnc"
 
+STAGE4_TAG="v0.1-alpha"
+STAGE4_NAME="lcnc-x86_64-v2-stage4"
+STAGE4_SRCURI="https://github.com/NTULINUX/gentoo_backup/releases/download/${STAGE4_TAG}/${STAGE4_NAME}.tar.xz"
+STAGE4_CHECKSUM="https://github.com/NTULINUX/gentoo_backup/releases/download/${STAGE4_TAG}/${STAGE4_NAME}.sha1sum"
+
 verbose_prompt()
 {
 	printf "\\n\\tEnable verbose installation?\\n
@@ -97,8 +102,6 @@ verify_psabi()
 	printf "\\tYou may safely use the Gentoo image for LinuxCNC.\\n"
 }
 
-# TODO: Add max kernel version once deployed in Gentoo image
-# Linux kernel cannot be newer than one in image (PREEMPT_RT) if F2FS is used
 linux_ver()
 {
 	printf "\\tChecking Linux kernel version...\\n"
@@ -111,6 +114,12 @@ linux_ver()
 		"${LINUX_MINOR_VER}" -lt 15 ]]
 	then
 		printf "\\n\\tError: Linux kernel version must be at least 5.15.0\\n"
+		exit 1
+	elif [[ "${LINUX_MAJOR_VER}" -gt 6 ||
+		"${LINUX_MAJOR_VER}" -eq 6 && \
+		"${LINUX_MINOR_VER}" -gt 5 ]]
+	then
+		printf "\\n\\tError: Linux kernel version must not be newer than 6.5.\\n"
 		exit 1
 	else
 		printf "\\tLinux kernel version: %s\\n" "$(uname -r)"
@@ -337,6 +346,12 @@ check_deps()
 	type wipefs >> /dev/null 2>&1 || \
 	{
 		printf "\\n\\tError: wipefs (util-linux) not installed.\\n" ;
+		exit 1 ;
+	}
+
+	type partprobe >> /dev/null 2>&1 || \
+	{
+		printf "\\n\\tError: partprobe (GNU parted) not installed.\\n" ;
 		exit 1 ;
 	}
 
@@ -745,7 +760,7 @@ partition_drive()
 	ROOT_PART="${ENTIRE_DRIVE}${P}4"
 
 	# Required for properly parsing PARTUUIDs
-	sleep 5 ; sync ; partprobe
+	sleep 5 ; sync ; partprobe ; sleep 5
 
 	# Make sure all PARTUUIDs are valid before proceeding
 
@@ -965,17 +980,68 @@ mount_init_filesystems()
 	printf "\\n\\tDone.\\n"
 }
 
-install_stage4()
+fetch_stage4()
 {
-	printf "\\n\\tInstalling Gentoo for LinuxCNC...\\n"
+	printf "\\n\\tFetching Gentoo for LinuxCNC files.
+\\tThis may take awhile...\\n"
 
-	tar --numeric-owner --xattrs-include='*.*' \
-		-xpf gentoo-cnc.tar.xz -C "${ROOT_MOUNT}/" || \
+	printf "\\tEntering directory: %s\\n" "${ROOT_MOUNT}"
+
+	cd "${ROOT_MOUNT}" || \
 	{
-		printf "\\n\\tError: Failed to decompress: %s to: %s\\n" \
-			"gentoo-cnc.tar.xz" "${ROOT_MOUNT}/"
+		printf "Failed to change directory to: %s\\n" "${ROOT_MOUNT}" ;
 		exit 1 ;
 	}
+
+	# 10 second timeout, 5 tries
+	if_log wget -T 10 -t 5 "${STAGE4_SRCURI}" || \
+	{
+		printf "\\n\\tError: Failed to fetch stage4 tarball.\\n" ;
+		exit 1 ;
+	}
+
+	if_log wget -T 10 -t 5 "${STAGE4_CHECKSUM}" || \
+	{
+		printf "\\n\\tError: Failed to fetch stage4 checksum.\\n" ;
+		exit 1 ;
+	}
+}
+
+verify_stage4()
+{
+	printf "\\n\\tVerifying integrity of stage4 tarball...\\n"
+
+	if [[ -r "${ROOT_MOUNT}/${STAGE4_NAME}.sha1sum" ]] ; then
+		sha1sum -c "${ROOT_MOUNT}/${STAGE4_NAME}.sha1sum" || \
+		{
+			printf "\\n\\tError: Failed to verify checksum on: %s\\n" \
+				"${ROOT_MOUNT}/${STAGE4_NAME}.tar.xz" 
+			exit 1 ;
+		}
+	else
+		printf "\\n\\tUnable to read checksum file: %s\\n" \
+			"${ROOT_MOUNT}/${STAGE4_NAME}.sha1sum"
+		exit 1
+	fi
+}
+
+install_stage4()
+{
+	printf "\\n\\tInstalling Gentoo for LinuxCNC.
+\\tThis may take awhile...\\n"
+
+	if [[ -r "${ROOT_MOUNT}/${STAGE4_NAME}.tar.xz" ]] ; then
+		tar --numeric-owner --xattrs-include='*.*' \
+			-xpf "${ROOT_MOUNT}/${STAGE4_NAME}.tar.xz" -C "${ROOT_MOUNT}/" || \
+			{
+				printf "\\n\\tError: Failed to decompress: %s to: %s\\n" \
+					"${ROOT_MOUNT}/${STAGE4_NAME}.tar.xz" "${ROOT_MOUNT}/" ;
+				exit 1 ;
+			}
+	else
+		printf "\\n\\tError: Unable to read stage4 tarball: %s\\n" \
+			"${ROOT_MOUNT}/${STAGE4_NAME}.tar.xz"
+	fi
 
 	sleep 5 && sync
 
@@ -1055,9 +1121,6 @@ generate_fstab()
 	if [[ "${FSTYPE}" == "F2FS" ]] ; then
 		F2FS_MOUNT_OPTS="atgc,gc_merge,lazytime"
 	fi
-
-	# FIXME: WIP: in-progress testing (no stage4 yet)
-	mkdir -p "${ROOT_MOUNT}/etc"
 
 	printf "%b\\n" \
 "# /etc/fstab: static file system information.
@@ -1162,32 +1225,41 @@ PARTUUID=${ROOT_PARTUUID}\\t/\\t\\txfs\\tdefaults\\t0\\t1" \
 
 install_grub()
 {
-	# TODO: chroot necessary for this to work
 	printf "\\n\\tInstalling GRUB...\\n"
 
 	if [[ "${INSTALL_TYPE}" == "LEGACY" ]] ; then
-		grub-install --no-floppy --recheck "${ENTIRE_DISK}" || \
-		{
-			printf "\\n\\tError: Failed to install legacy GRUB.\\n" ;
-			exit 1 ;
-		}
+		chroot "${ROOT_MOUNT}" /bin/bash <<-EOF
+			grub-install --no-floppy --recheck "${ENTIRE_DISK}" || \
+			{
+				printf "\\n\\tError: Failed to install legacy GRUB.\\n" ;
+				exit 1 ;
+			}
+		EOF
 	elif [[ "${INSTALL_TYPE}" == "UEFI" && \
 		"${REMOVABLE}" == "FALSE" ]]
 	then
-		grub-install --target=x86_64-efi --efi-directory=/efi || \
-		{
-			printf "\\n\\tError: Failed to install UEFI GRUB.\\n" ;
-			exit 1 ;
-		}
+		chroot "${ROOT_MOUNT}" /bin/bash <<-EOF
+			grub-install --target=x86_64-efi --efi-directory=/efi || \
+			{
+				printf "\\n\\tError: Failed to install UEFI GRUB.\\n" ;
+				exit 1 ;
+			}
+		EOF
 	elif [[ "${INSTALL_TYPE}" == "UEFI" && \
 		"${REMOVABLE}" == "TRUE" ]]
 	then
-		grub-install --target=x86_64-efi --efi-directory=/efi --removable || \
-		{
-			printf "\\n\\tError: Failed to install UEFI GRUB (--removable)\\n" ;
-			exit 1 ;
-		}
+		chroot "${ROOT_MOUNT}" /bin/bash <<-EOF
+			grub-install --target=x86_64-efi --efi-directory=/efi --removable || \
+			{
+				printf "\\n\\tError: Failed to install UEFI GRUB (--removable)\\n" ;
+				exit 1 ;
+			}
+		EOF
 	fi
+
+	chroot "${ROOT_MOUNT}" /bin/bash <<-EOF
+		grub-mkconfig -o /boot/grub/grub.cfg
+	EOF
 
 	sleep 5 && sync
 
@@ -1199,21 +1271,6 @@ unmount_all()
 	printf "\\n\\tUnmouting filesystems...\\n"
 
 	if [[ "${INSTALL_TYPE}" == "UEFI" ]] ; then
-		# FIXME: WIP (testing)
-		mkdir -p "${ROOT_MOUNT}/efi" || \
-		{
-			printf "\\n\\tError: Failed to create: %s\\n" \
-				"${ROOT_MOUNT}/efi" ;
-			exit 1 ;
-		}
-
-		mount "${EFI_PART}" "${ROOT_MOUNT}/efi" || \
-		{
-			printf "\\n\\tError: Failed to mount: %s to: %s\\n" \
-				"${EFI_PART}" "${ROOT_MOUNT}/efi" ;
-			exit 1 ;
-		}
-
 		umount "${EFI_PART}" || \
 		{
 			printf "\\n\\tError: Failed to unmount: %s\\n" \
@@ -1238,6 +1295,9 @@ unmount_all()
 	}
 
 	sleep 5 && sync
+
+	# Required for unmounting root partition
+	cd
 
 	umount "${ROOT_PART}" || \
 	{
@@ -1283,14 +1343,17 @@ format_partitions
 
 mount_init_filesystems
 
-# TODO
-# install_stage4
-# mount_final_filesystems
+fetch_stage4
+
+verify_stage4
+
+install_stage4
+
+mount_final_filesystems
 
 generate_fstab
 
-# More TODO
-# install_grub
+install_grub
 
 unmount_all
 
