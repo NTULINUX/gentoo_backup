@@ -1,9 +1,10 @@
+app-admin/sudo
 app-arch/lz4
 app-arch/xarchiver
 app-editors/featherpad
 app-misc/screen
 app-portage/gentoolkit
-app-text/xpdf
+app-text/qpdfview
 dev-libs/elfutils
 dev-python/PyQt5
 dev-python/deepdiff
@@ -14,6 +15,7 @@ dev-util/geany
 dev-util/rt-tests
 dev-vcs/git
 gnome-extra/nm-applet
+kde-frameworks/breeze-icons
 lxqt-base/lxqt-meta
 media-gfx/inkscape
 media-libs/opencv
@@ -26,12 +28,17 @@ sys-block/parted
 sys-boot/grub
 sys-boot/syslinux
 sys-devel/clang
+sys-fs/btrfs-progs
+sys-fs/dosfstools
+sys-fs/f2fs-tools
 sys-fs/xfsprogs
 sys-kernel/linux-firmware
 www-client/epiphany
 www-client/links
 x11-apps/mesa-progs
+x11-terms/xfce4-terminal
 x11-themes/xfwm4-themes
+xfce-base/thunar
 xfce-base/xfce4-panel
 xfce-base/xfce4-session
 xfce-base/xfce4-settings

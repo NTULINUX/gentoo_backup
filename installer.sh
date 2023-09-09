@@ -244,9 +244,7 @@ linux_config_check()
 		"${XFS_ERROR_THROWN}" -eq 1 ]]
 	then
 		printf "\\n\\tErrors detected. Exiting...\\n\\n"
-		# FIXME: WIP
-		# exit 1
-		sleep 0
+		exit 1
 	else
 		printf "\\tAll filesystems enabled.\\n\\n"
 	fi
@@ -762,7 +760,7 @@ partition_drive()
 	ROOT_PART="${ENTIRE_DRIVE}${P}4"
 
 	# Required for properly parsing PARTUUIDs
-	sleep 5 ; sync ; partprobe ; sleep 5
+	sleep 5 ; sync ; partprobe
 
 	# Make sure all PARTUUIDs are valid before proceeding
 
