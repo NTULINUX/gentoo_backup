@@ -1315,6 +1315,13 @@ install_grub()
 		EOF
 	fi
 
+	if [[ "${FSTYPE}" == "F2FS" ]] ; then
+		printf "\\tFixing kernel parameters for F2FS...\\n"
+
+		sed -i "s/#GRUB_CMDLINE_LINUX=\"\"/GRUB_CMDLINE_LINUX=\"rootflags=atgc\"/" \
+			"${ROOT_MOUNT}/etc/default/grub"
+	fi
+
 	printf "\\tGenerating grub.cfg via grub-mkconfig...\\n"
 
 	chroot "${ROOT_MOUNT}" /bin/bash <<-EOF
