@@ -18,6 +18,8 @@ if [[ "${EUID}" -ne 0 ]] ; then
 fi
 
 ROOT_MOUNT="/mnt/gentoo-cnc"
+HOME_USER="lcnc"
+HOME_MOUNT_SUBDIR="${ROOT_MOUNT}/home/${HOME_USER}"
 
 STAGE4_TAG="v0.1-alpha"
 STAGE4_NAME="lcnc-x86_64-v2-stage4"
@@ -977,6 +979,15 @@ mount_init_filesystems()
 		exit 1 ;
 	}
 
+	printf "\\tMounting home directory...\\n"
+
+	mount "${HOME_PART}" "${ROOT_MOUNT}/home" || \
+	{
+		printf "\\n\\tError: Failed to mount: %s to: %s\\n" \
+			"${HOME_PART}" "${ROOT_MOUNT}/home" ;
+		exit 1 ;
+	}
+
 	printf "\\n\\tDone.\\n"
 }
 
@@ -1005,6 +1016,8 @@ fetch_stage4()
 		printf "\\n\\tError: Failed to fetch stage4 checksum.\\n" ;
 		exit 1 ;
 	}
+
+	printf "\\n\\tDone.\\n"
 }
 
 verify_stage4()
@@ -1023,6 +1036,8 @@ verify_stage4()
 			"${ROOT_MOUNT}/${STAGE4_NAME}.sha1sum"
 		exit 1
 	fi
+
+	printf "\\n\\tDone.\\n"
 }
 
 install_stage4()
@@ -1044,6 +1059,49 @@ install_stage4()
 	fi
 
 	sleep 5 && sync
+
+	printf "\\n\\tDone.\\n"
+}
+
+display_keepalive()
+{
+	printf "\\n\\tKilling all display power savings...\\n"
+
+	mkdir -p "${HOME_MOUNT_SUBDIR}/.config/autostart" || \
+	{
+		printf "\\n\\tError: Failed to create: %s\\n" \
+			"${HOME_MOUNT_SUBDIR}/.config/autostart" ;
+		exit 1 ;
+	}
+
+	printf "[Desktop Entry]
+Exec=xset s 0
+Name=xset timeout
+Type=Application
+Version=1.0" &> "${HOME_MOUNT_SUBDIR}/.config/autostart/xset timeout.desktop"
+
+	printf "[Desktop Entry]
+Exec=xset s noblank
+Name=xset noblank
+Type=Application
+Version=1.0" &> "${HOME_MOUNT_SUBDIR}/.config/autostart/xset noblank.desktop"
+
+	printf "[Desktop Entry]
+Exec=xset -dpms
+Name=xset dpms
+Type=Application
+Version=1.0" &> "${HOME_MOUNT_SUBDIR}/.config/autostart/xset dpms.desktop"
+
+	printf "\\tFixing permissions on autostart files...\\n"
+
+	chroot "${ROOT_MOUNT}" /bin/bash <<-EOF
+		chown -R "${HOME_USER}":"${HOME_USER}" "${HOME_MOUNT_SUBDIR}/.config" || \
+		{
+			printf "\\n\\tError: Failed to change permissions of: %s\\n" \
+				"${HOME_MOUNT_SUBDIR}/.config" ;
+			exit 1 ;
+		}
+	EOF
 
 	printf "\\n\\tDone.\\n"
 }
@@ -1257,6 +1315,8 @@ install_grub()
 		EOF
 	fi
 
+	printf "\\tGenerating grub.cfg via grub-mkconfig...\\n"
+
 	chroot "${ROOT_MOUNT}" /bin/bash <<-EOF
 		grub-mkconfig -o /boot/grub/grub.cfg
 	EOF
@@ -1348,6 +1408,8 @@ fetch_stage4
 verify_stage4
 
 install_stage4
+
+display_keepalive
 
 mount_final_filesystems
 
