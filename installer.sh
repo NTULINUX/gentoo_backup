@@ -21,7 +21,7 @@ ROOT_MOUNT="/mnt/gentoo-cnc"
 HOME_USER="lcnc"
 HOME_MOUNT_SUBDIR="${ROOT_MOUNT}/home/${HOME_USER}"
 
-STAGE4_TAG="v0.1-alpha"
+STAGE4_TAG="v0.2-alpha"
 STAGE4_NAME="lcnc-x86_64-v2-stage4"
 STAGE4_SRCURI="https://github.com/NTULINUX/gentoo_backup/releases/download/${STAGE4_TAG}/${STAGE4_NAME}.tar.xz"
 STAGE4_CHECKSUM="https://github.com/NTULINUX/gentoo_backup/releases/download/${STAGE4_TAG}/${STAGE4_NAME}.sha1sum"
