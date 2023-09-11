@@ -927,7 +927,7 @@ mount_init_filesystems()
 	if ! grep -e "${ROOT_MOUNT}" "/proc/mounts" >> /dev/null 2>&1 && \
 		! mount | grep "${ROOT_MOUNT}" >> /dev/null 2>&1
 	then
-		printf "\\tNo mount point found on: %s\\n" "${ROOT_MOUNT}"
+		printf "\\tNo mount points found on: %s\\n" "${ROOT_MOUNT}"
 	else
 		printf "\\n\\tError: %s is mounted.\\n" "${ROOT_MOUNT}"
 		exit 1
@@ -978,6 +978,13 @@ mount_init_filesystems()
 	}
 
 	printf "\\tMounting home directory...\\n"
+
+	mkdir -p "${ROOT_MOUNT}/home" || \
+	{
+		printf "\\n\\tError: Failed to create: %s\\n" \
+			"${ROOT_MOUNT}/home" ;
+		exit 1 ;
+	}
 
 	mount "${HOME_PART}" "${ROOT_MOUNT}/home" || \
 	{
@@ -1076,27 +1083,27 @@ display_keepalive()
 Exec=xset s 0
 Name=xset timeout
 Type=Application
-Version=1.0" &> "${HOME_MOUNT_SUBDIR}/.config/autostart/xset timeout.desktop"
+Version=1.0\\n" &> "${HOME_MOUNT_SUBDIR}/.config/autostart/xset timeout.desktop"
 
 	printf "[Desktop Entry]
 Exec=xset s noblank
 Name=xset noblank
 Type=Application
-Version=1.0" &> "${HOME_MOUNT_SUBDIR}/.config/autostart/xset noblank.desktop"
+Version=1.0\\n" &> "${HOME_MOUNT_SUBDIR}/.config/autostart/xset noblank.desktop"
 
 	printf "[Desktop Entry]
 Exec=xset -dpms
 Name=xset dpms
 Type=Application
-Version=1.0" &> "${HOME_MOUNT_SUBDIR}/.config/autostart/xset dpms.desktop"
+Version=1.0\\n" &> "${HOME_MOUNT_SUBDIR}/.config/autostart/xset dpms.desktop"
 
 	printf "\\tFixing permissions on autostart files...\\n"
 
 	chroot "${ROOT_MOUNT}" /bin/bash <<-EOF
-		chown -R "${HOME_USER}":"${HOME_USER}" "${HOME_MOUNT_SUBDIR}/.config" || \
+		chown -R "${HOME_USER}":"${HOME_USER}" "/home/${HOME_USER}/.config" || \
 		{
 			printf "\\n\\tError: Failed to change permissions of: %s\\n" \
-				"${HOME_MOUNT_SUBDIR}/.config" ;
+				"/home/${HOME_USER}/.config" ;
 			exit 1 ;
 		}
 	EOF
@@ -1356,6 +1363,13 @@ unmount_all()
 	{
 		printf "\\n\\tError: Failed to unmount: %s\\n" \
 			"${BOOT_PART}" ;
+		exit 1 ;
+	}
+
+	umount "${HOME_PART}" || \
+	{
+		printf "\\n\\tError: Failed to unmount: %s\\n" \
+			"${HOME_PART}" ;
 		exit 1 ;
 	}
 
