@@ -1439,3 +1439,7 @@ install_grub
 unmount_all
 
 cleanup
+
+printf "\\n\\tInstallation complete! You may now reboot.\\n"
+
+exit 0
