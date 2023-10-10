@@ -519,9 +519,29 @@ check_drive()
 	then
 		printf "\\tNo mount points found on: %s\\n" "${ENTIRE_DRIVE}"
 	else
-		printf "\\n\\tError: %s is or has partitions mounted.\\n" \
+		printf "\\n\\tBlock device: %s is or has partitions mounted.
+\\tVerifying device is not part of the root filesystem...\\n" \
 			"${ENTIRE_DRIVE}"
-		exit 1
+
+		ROOT_BLOCK=$(findmnt -n -o "SOURCE" -c "/")
+
+		if [[ "${ROOT_BLOCK}" == *"${ENTIRE_DRIVE}"* ]] ; then
+			printf "\\n\\tError: Block device: %s may not be used for installation.\\n" \
+				"${ENTIRE_DRIVE}"
+			exit 1
+		else
+			printf "\\tAttempting to unmount partitions on: %s\\n" "${ENTIRE_DRIVE}"
+
+			mapfile -t PARTITIONS < <(lsblk -n -o MOUNTPOINTS "${ENTIRE_DRIVE}" | sed '/^$/d')
+
+			for i in "${PARTITIONS[@]}" ; do
+				umount "${i}" || \
+				{
+					printf "\\n\\tError: Failed to unmount: %s\\n" "${i}" ;
+					exit 1 ;
+				}
+			done
+		fi
 	fi
 
 	printf "\\n\\tDone.\\n"
@@ -760,7 +780,12 @@ partition_drive()
 	ROOT_PART="${ENTIRE_DRIVE}${P}4"
 
 	# Required for properly parsing PARTUUIDs
-	sleep 5 ; sync ; partprobe
+	sleep 5 ; sync
+	# This sometimes fails on Debian with SystemRescue plugged in
+	set +e
+	partprobe
+	set -e
+	sleep 5
 
 	# Make sure all PARTUUIDs are valid before proceeding
 
@@ -1292,7 +1317,7 @@ install_grub()
 
 	if [[ "${INSTALL_TYPE}" == "LEGACY" ]] ; then
 		chroot "${ROOT_MOUNT}" /bin/bash <<-EOF
-			grub-install --no-floppy --recheck "${ENTIRE_DISK}" || \
+			grub-install --target=i386-pc --no-floppy --recheck "${ENTIRE_DRIVE}" || \
 			{
 				printf "\\n\\tError: Failed to install legacy GRUB.\\n" ;
 				exit 1 ;
@@ -1340,7 +1365,7 @@ install_grub()
 
 unmount_all()
 {
-	printf "\\n\\tUnmouting filesystems...\\n"
+	printf "\\n\\tUnmounting filesystems...\\n"
 
 	if [[ "${INSTALL_TYPE}" == "UEFI" ]] ; then
 		umount "${EFI_PART}" || \
