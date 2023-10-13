@@ -3,8 +3,6 @@
 # Gentoo stage4 installation script for LinuxCNC
 # Written by Alec Ari
 
-# Yes, I'm writing an installer for something that doesn't exist yet.
-
 set -eou pipefail
 
 printf "\\033[0;33m
@@ -91,7 +89,7 @@ verify_psabi()
 	mapfile -s 1 -t FLAGS < <(printf "%s" "${X86_64_V2}" | sed 's/\t//g')
 
 	for (( i=0 ; i < "${#FLAGS[@]}" ; i++ )) ; do
-		printf "\\tChecking for: %s\\n" "${FLAGS[$i]}"
+		if_log printf "\\tChecking for: %s\\n" "${FLAGS[$i]}"
 
 		lscpu | grep "${FLAGS[$i]}" >> /dev/null 2>&1 || \
 		{
