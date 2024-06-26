@@ -109,17 +109,17 @@ linux_ver()
 	LINUX_MAJOR_VER=$(uname -r | cut -d '.' -f1)
 	LINUX_MINOR_VER=$(uname -r | cut -d '.' -f2)
 
-	if [[ "${LINUX_MAJOR_VER}" -lt 5 || \
-		"${LINUX_MAJOR_VER}" -eq 5 && \
-		"${LINUX_MINOR_VER}" -lt 15 ]]
+	if [[ "${LINUX_MAJOR_VER}" -lt 6 || \
+		"${LINUX_MAJOR_VER}" -eq 6 && \
+		"${LINUX_MINOR_VER}" -lt 1 ]]
 	then
-		printf "\\n\\tError: Linux kernel version must be at least 5.15.0\\n"
+		printf "\\n\\tError: Linux kernel version must be at least 6.1\\n"
 		exit 1
 	elif [[ "${LINUX_MAJOR_VER}" -gt 6 ||
 		"${LINUX_MAJOR_VER}" -eq 6 && \
 		"${LINUX_MINOR_VER}" -gt 5 ]]
 	then
-		printf "\\n\\tError: Linux kernel version must not be newer than 6.5.\\n"
+		printf "\\n\\tError: Linux kernel version must not be newer than 6.5\\n"
 		exit 1
 	else
 		printf "\\tLinux kernel version: %s\\n" "$(uname -r)"
@@ -286,30 +286,35 @@ f2fs_ver()
 	fi
 }
 
+xfs_ver()
+{
+	XFS_MAJOR_VER=$(mkfs.xfs -V | grep -o [0-9] | sed -n '1p')
+	XFS_MINOR_VER=$(mkfs.xfs -V | grep -o [0-9] | sed -n '2p')
+
+	if [[ "${XFS_MAJOR_VER}" -lt 6 || \
+		"${XFS_MAJOR_VER}" -eq 6 && \
+		"${XFS_MINOR_VER}" -lt 1 ]]
+	then
+		printf "\\n\\tError: xfsprogs must be 6.1 or newer.\\n"
+		exit 1
+	else
+		printf "\\txfsprogs version: %s\\n"\
+			"${XFS_MAJOR_VER}.${XFS_MINOR_VER}"
+	fi
+}
+
 check_deps()
 {
 	printf "\\n\\tChecking dependencies...\\n\\n"
 
-	# This is necessary to ensure we don't create a BTRFS or F2FS filesystem
-	# with an ancient kernel, but also that the kernel is not newer than that
-	# used to mount the F2FS filesystem (the PREEMPT_RT kernel)
+	# This is necessary to ensure we don't create a BTRFS, F2FS or XFS
+	# filesystem with an ancient kernel, but also that the kernel is not
+	# newer than that used to mount the F2FS filesystem (the PREEMPT_RT kernel)
 	# https://bugzilla.opensuse.org/show_bug.cgi?id=1109665#c0
 	linux_ver
 
 	# Make sure the running kernel supports BTRFS, EXT4, F2FS and XFS
 	linux_config_check
-
-	type mkfs.ext4 >> /dev/null 2>&1 || \
-	{
-		printf "\\n\\tError: e2fsprogs not installed.\\n" ;
-		exit 1 ;
-	}
-
-	type mkfs.xfs >> /dev/null 2>&1 || \
-	{
-		printf "\\n\\tError: xfsprogs not installed.\\n" ;
-		exit 1 ;
-	}
 
 	type mkfs.btrfs >> /dev/null 2>&1 || \
 	{
@@ -317,11 +322,23 @@ check_deps()
 		exit 1 ;
 	} ; printf "\\tChecking version of btrfs-progs...\\n" ; btrfs_ver
 
+	type mkfs.ext4 >> /dev/null 2>&1 || \
+	{
+		printf "\\n\\tError: e2fsprogs not installed.\\n" ;
+		exit 1 ;
+	}
+
 	type mkfs.f2fs >> /dev/null 2>&1 || \
 	{
 		printf "\\n\\tError: f2fs-tools not installed.\\n" ;
 		exit 1 ;
 	} ; printf "\\tChecking version of f2fs-tools...\\n" ; f2fs_ver
+
+	type mkfs.xfs >> /dev/null 2>&1 || \
+	{
+		printf "\\n\\tError: xfsprogs not installed.\\n" ;
+		exit 1 ;
+	} ; printf "\\tChecking version of xfsprogs...\\n" ; xfs_ver
 
 	type mkfs.fat >> /dev/null 2>&1 || \
 	{
