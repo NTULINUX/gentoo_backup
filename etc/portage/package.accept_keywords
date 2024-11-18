@@ -1,7 +1,8 @@
 # Accept/Restrict keywords
-app-office/libreoffice -~amd64
+dev-db/sqlite -~amd64
 media-gfx/gimp **
-
+media-video/ffmpeg **
+media-video/vlc **
 #
 # BUG
 #

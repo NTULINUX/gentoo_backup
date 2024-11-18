@@ -3,18 +3,20 @@
 #
 
 =app-cdr/cdrtools-*alpha*
-=dev-lang/luajit-*beta*
+>=dev-build/xfce4-dev-tools-4.19
 =dev-libs/libdbusmenu-qt-*pre*
-=dev-libs/libmspack-*alpha*
 dev-libs/openssl:0/3
 =dev-perl/Mozilla-CA-*9999*
 =dev-python/yapps2-*9999*
+=dev-util/librnp-9999
 >=gui-libs/gtk-4.11
+=media-video/ffmpeg-9999
+=media-video/vlc-9999
 =sci-electronics/linuxcnc-*9999*
-sys-apps/systemd-tmpfiles
 sys-apps/systemd-utils
->=sys-apps/util-linux-2.39
 =sys-boot/grub-*rc*
 =sys-boot/syslinux-*pre*
 =virtual/perl-*-*rc*
 =virtual/perl-*-*-*rc*
+xfce-base/*
+xfce-extra/*

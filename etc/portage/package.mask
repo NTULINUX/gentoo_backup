@@ -6,8 +6,6 @@
 */*-bin
 */*pulseaudio*
 */*systemd*
-<dev-libs/openssl-3.0.8
-gnome-base/gvfs
 net-misc/dropbear
 
 # Mask some unstable keywords
@@ -17,5 +15,10 @@ net-misc/dropbear
 =*/*-*_pre*
 =*/*-*_rc*
 
-# Prevent frequent, unnecessary GCC updates (avoid snapshots)
-=sys-devel/gcc-*_p*
+#
+# BUG
+#
+
+dev-lang/python:3.13
+>=sys-auth/elogind-255
+sys-boot/syslinux::gentoo
