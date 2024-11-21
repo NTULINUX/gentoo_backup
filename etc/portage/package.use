@@ -19,6 +19,7 @@ dev-qt/qtgui jpeg
 dev-qt/qtmultimedia widgets
 dev-qt/qttools designer
 dev-qt/qtwebengine widgets
+gnome-base/gvfs fuse
 kde-apps/k3b mad sndfile taglib
 kde-apps/kate-addons -projects -snippets
 kde-frameworks/kfilemetadata taglib
@@ -40,7 +41,7 @@ media-sound/audacity ffmpeg id3tag sbsms
 media-sound/jack2 alsa
 media-video/ffmpeg libaom openssl webp
 media-video/pipewire extra
-media-video/vlc aom live
+media-video/vlc -v4l aom live
 net-analyzer/wireshark -dftest -minizip -netlink -opus -randpkt -randpktdump -plugins -sharkd -text2pcap -tshark -udpdump
 net-libs/libpsl -icu
 net-misc/networkmanager -tools

@@ -36,6 +36,7 @@ media-sound/audacity
 media-sound/pavucontrol
 media-video/libva-utils
 media-video/mpv
+media-video/vlc
 net-analyzer/tcpdump
 net-analyzer/wireshark
 net-firewall/nftables
@@ -67,3 +68,4 @@ x11-misc/vdpauinfo
 x11-themes/gentoo-xcursors
 x11-themes/gnome-icon-theme-extras
 xfce-base/xfce4-meta
+xfce-extra/xfce4-notifyd
