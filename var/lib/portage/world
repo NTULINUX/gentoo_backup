@@ -11,6 +11,7 @@ app-portage/eix
 app-portage/gentoolkit
 dev-libs/elfutils
 dev-libs/libmodbus
+dev-python/deepdiff
 dev-python/distro
 dev-python/pip
 dev-python/pyopengl
@@ -32,7 +33,7 @@ media-gfx/inkscape
 media-gfx/krita
 media-sound/alsa-utils
 media-sound/audacity
-media-sound/cadence
+media-sound/pavucontrol
 media-video/libva-utils
 media-video/mpv
 net-analyzer/tcpdump
@@ -49,6 +50,7 @@ sys-apps/smartmontools
 sys-apps/usbutils
 sys-apps/xdg-desktop-portal-xapp
 sys-boot/grub
+sys-boot/syslinux
 sys-devel/bc
 sys-fs/btrfs-progs
 sys-fs/dosfstools
@@ -65,4 +67,3 @@ x11-misc/vdpauinfo
 x11-themes/gentoo-xcursors
 x11-themes/gnome-icon-theme-extras
 xfce-base/xfce4-meta
-xfce-extra/xfce4-notifyd

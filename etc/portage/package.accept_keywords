@@ -3,9 +3,3 @@ dev-db/sqlite -~amd64
 media-gfx/gimp **
 media-video/ffmpeg **
 media-video/vlc **
-#
-# BUG
-#
-
-# No template named 'auto_ptr' in namespace 'std'
-media-libs/gexiv2 -~amd64

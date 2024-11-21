@@ -32,9 +32,9 @@ media-libs/freetype brotli
 media-libs/gegl cairo lcms
 media-libs/libcanberra -udev
 media-libs/libsdl2 sound
-media-libs/mesa video_cards_radeonsi
 media-libs/opencv contrib contribdnn jpeg
 media-libs/opus custom-modes
+media-libs/portaudio alsa
 media-libs/tiff jpeg
 media-sound/audacity ffmpeg id3tag sbsms
 media-sound/jack2 alsa
@@ -57,7 +57,6 @@ www-client/links -X
 x11-apps/mesa-progs -wayland
 x11-base/xwayland libei
 x11-libs/gdk-pixbuf jpeg
-x11-libs/libdrm video_cards_radeon
 x11-misc/lightdm-gtk-greeter branding
 x11-wm/openbox session
 xfce-base/xfce4-meta archive calendar upower
