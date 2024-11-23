@@ -27,6 +27,7 @@ kde-apps/kate
 kde-apps/okular
 kde-frameworks/breeze-icons
 lxqt-base/lxqt-meta
+mail-client/thunderbird
 media-fonts/liberation-fonts
 media-gfx/gimp
 media-gfx/inkscape
