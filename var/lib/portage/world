@@ -9,8 +9,6 @@ app-portage/gentoolkit
 app-text/qpdfview
 dev-libs/elfutils
 dev-libs/libmodbus
-dev-libs/libtraceevent
-dev-libs/libtracefs
 dev-python/deepdiff
 dev-python/distro
 dev-python/pip
@@ -40,6 +38,7 @@ net-misc/ntp
 net-vpn/networkmanager-openvpn
 sci-electronics/linuxcnc
 sys-apps/dmidecode
+sys-apps/nvme-cli
 sys-apps/smartmontools
 sys-apps/usbutils
 sys-apps/xdg-desktop-portal-xapp
