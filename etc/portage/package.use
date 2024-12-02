@@ -2,55 +2,65 @@
 # Package-specific USE flags
 #
 
-app-arch/libarchive nettle
+app-arch/libarchive lzo lz4
 app-arch/tar minimal
 app-crypt/gcr gtk
-app-editors/nano -spell
+app-office/libreoffice pdfimport
 app-shells/bash -net
-app-text/poppler cairo qt5 png tiff
-app-text/qpdfview postscript
+app-text/poppler cairo nss png qt5 tiff
 app-text/xmlto text
 dev-libs/libdbusmenu gtk3
 dev-libs/libpcre2 pcre32
-dev-libs/libportal gtk
-dev-python/PyQt5 declarative designer gui multimedia network opengl svg widgets
-dev-qt/qtgui egl jpeg
+dev-libs/sexpp static-libs
+dev-python/pillow webp tiff
+dev-python/pyqt5 declarative designer gui multimedia printsupport svg webchannel widgets
+dev-qt/qtbase libproxy
+dev-qt/qtgui jpeg
 dev-qt/qtmultimedia widgets
-dev-qt/qtwebchannel qml
+dev-qt/qttools designer
 dev-qt/qtwebengine widgets
+gnome-base/gvfs fuse
+kde-apps/k3b mad sndfile taglib
+kde-apps/kate-addons -projects -snippets
 kde-frameworks/kfilemetadata taglib
-lxqt-base/lxqt-meta terminal
-media-gfx/fontforge -X
+lxqt-base/lxqt-meta -archiver terminal
+media-gfx/blender -oidn -osl
+media-gfx/gimp postscript webp
 media-gfx/inkscape jpeg postscript svg2
+media-gfx/krita color-management pdf vc
 media-libs/babl lcms
+media-libs/freetype brotli
 media-libs/gegl cairo lcms
 media-libs/libcanberra -udev
-media-libs/opencv contrib contribdnn jpeg opengl qt5
-media-video/guvcview qt5
+media-libs/libsdl2 sound
+media-libs/libsndfile minimal
+media-libs/opencv contrib contribdnn jpeg png tiff
+media-libs/opus custom-modes
+media-libs/portaudio alsa
+media-libs/tiff jpeg
+media-sound/audacity ffmpeg id3tag sbsms
+media-sound/jack2 alsa
+media-video/ffmpeg libaom openssl webp
+media-video/pipewire extra
+media-video/vlc -v4l aom live
+net-analyzer/wireshark -dftest -minizip -netlink -opus -randpkt -randpktdump -plugins -sharkd -text2pcap -tshark -udpdump
 net-libs/libpsl -icu
-net-libs/webkit-gtk jpeg2k
-net-libs/zeromq drafts
+net-misc/networkmanager -tools
+net-print/cups-filters jpeg png
 sys-apps/smartmontools -caps
-sys-auth/pambase minimal
 sys-auth/polkit daemon
-sys-boot/grub -fonts -themes -truetype
-sys-devel/clang-runtime sanitize
-sys-devel/gcc vanilla
+sys-devel/binutils -pgo
 sys-fs/cryptsetup -gcrypt -openssl nettle
-sys-fs/udisks -elogind
-sys-libs/compiler-rt-sanitizers -asan -cfi -dfsan -gwp-asan -hwasan -libfuzzer -lsan -memprof -msan -orc -safestack -scudo -tsan -ubsan -xray
+sys-fs/fuse suid
+sys-fs/udisks daemon
 sys-libs/llvm-libunwind static-libs
 sys-libs/zlib minizip
 sys-process/lsof rpc
+www-client/links -X
+x11-apps/mesa-progs -wayland
+x11-base/xwayland libei
 x11-libs/gdk-pixbuf jpeg
+x11-misc/lightdm-gtk-greeter branding
 x11-wm/openbox session
-
-#
-# BUG
-#
-
-# USE="lto" broken with LLVM toolchain
-net-misc/networkmanager -lto
-# USE="pgo" broken with LLVM toolchain
-app-shells/bash -pgo
-sys-devel/binutils -pgo
+xfce-base/xfce4-meta archive calendar
+xfce-base/xfce4-session -wayland

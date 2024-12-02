@@ -1,2 +1,2 @@
 # Austin Danger Powers likes to live dangerously
-*/* -hardened -pic -pie -static-pie
+*/* -cet -default-stack-clash-protection -default-znow -hardened -pic -pie -ssp -static-pie

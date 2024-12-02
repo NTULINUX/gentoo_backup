@@ -1,0 +1,5 @@
+# Accept/Restrict keywords
+dev-db/sqlite -~amd64
+media-gfx/gimp **
+media-video/ffmpeg **
+media-video/vlc **
