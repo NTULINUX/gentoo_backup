@@ -1,6 +1,6 @@
 #
 # Automatically generated file; DO NOT EDIT.
-# Linux/x86 6.12.6 Kernel Configuration
+# Linux/x86 6.12.7 Kernel Configuration
 #
 CONFIG_CC_VERSION_TEXT="clang version 19.1.6+libcxx"
 CONFIG_GCC_VERSION=0
@@ -1150,7 +1150,7 @@ CONFIG_VGA_ARB_MAX_GPUS=2
 #
 # PCI controller drivers
 #
-# CONFIG_VMD is not set
+CONFIG_VMD=y
 
 #
 # Cadence-based PCIe controllers
@@ -1276,6 +1276,8 @@ CONFIG_EFI_RUNTIME_WRAPPERS=y
 CONFIG_EFI_DISABLE_RUNTIME=y
 # CONFIG_EFI_COCO_SECRET is not set
 # end of EFI (Extensible Firmware Interface) Support
+
+# CONFIG_IMX_SCMI_MISC_DRV is not set
 
 #
 # Qualcomm firmware drivers
