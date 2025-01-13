@@ -20,5 +20,4 @@ net-misc/dropbear
 #
 
 dev-lang/python:3.13
->=sys-auth/elogind-255
 sys-boot/syslinux::gentoo

@@ -1,35 +1,46 @@
 #!/usr/bin/env bash
 
-# Checks for x86-64-v2 psABI support
+# Checks for x86-64-v3 psABI support
 # Written by Alec Ari
 
 set -eou pipefail
 
-X86_64_V2="
-	mmx
-	mmxext
-	popcnt
-	sse
-	sse2
-	sse3
-	ssse3
-	sse4_1
-	sse4_2
-"
+	printf "\\n\\tChecking CPU requirements...\\n"
 
-mapfile -s 1 -t FLAGS < <(printf "%s" "${X86_64_V2}" | sed 's/\t//g')
+	X86_64_V3="
+		abm
+		avx
+		avx2
+		bmi1
+		bmi2
+		f16c
+		fma
+		mmx
+		mmxext
+		movbe
+		pni
+		popcnt
+		sse
+		sse2
+		ssse3
+		sse4_1
+		sse4_2
+		xsave
+	"
 
-for (( i=0 ; i < "${#FLAGS[@]}" ; i++ )) ; do
-	printf "\\tChecking for: %s\\n" "${FLAGS[$i]}"
+	mapfile -s 1 -t FLAGS < <(printf "%s" "${X86_64_V3}" | sed 's/\t//g')
 
-	lscpu | grep "${FLAGS[$i]}" >> /dev/null 2>&1 || \
-	{
-		printf "\\tError: Missing: %s\\n" "${FLAGS[$i]}" ;
-		exit 1 ;
-	}
-done
+	for (( i=0 ; i < "${#FLAGS[@]}" ; i++ )) ; do
+		printf "\\tChecking for: %s\\n" "${FLAGS[$i]}"
 
-printf "\\n\\tDone. Your processor is x86-64-v2 or newer.\\n"
-printf "\\tYou may safely use the Gentoo image for LinuxCNC.\\n"
+		lscpu | grep -o " ${FLAGS[$i]} " >> /dev/null 2>&1 || \
+		{
+			printf "\\tError: Missing: %s\\n" "${FLAGS[$i]}" ;
+			exit 1 ;
+		}
+	done
+
+	printf "\\n\\tDone. Your processor is x86-64-v3 or newer.\\n"
+	printf "\\tYou may safely use the Gentoo image for LinuxCNC.\\n"
 
 exit 0

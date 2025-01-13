@@ -14,6 +14,8 @@ dev-libs/libpcre2 pcre32
 dev-libs/sexpp static-libs
 dev-python/pillow webp tiff
 dev-python/pyqt5 declarative designer gui multimedia printsupport svg webchannel widgets
+dev-python/pyqt6 designer multimedia
+dev-python/pyside6 designer multimedia quick uitools
 dev-qt/qtbase libproxy
 dev-qt/qtgui jpeg
 dev-qt/qtmultimedia widgets
@@ -23,6 +25,7 @@ gnome-base/gvfs fuse
 kde-apps/k3b mad sndfile taglib
 kde-apps/kate-addons -projects -snippets
 kde-frameworks/kfilemetadata taglib
+llvm-runtimes/libunwind static-libs
 lxqt-base/lxqt-meta -archiver terminal
 media-gfx/blender -oidn -osl
 media-gfx/gimp postscript webp
@@ -45,7 +48,6 @@ media-video/pipewire extra
 media-video/vlc -v4l aom live
 net-analyzer/wireshark -dftest -minizip -netlink -opus -randpkt -randpktdump -plugins -sharkd -text2pcap -tshark -udpdump
 net-libs/libpsl -icu
-net-misc/networkmanager -tools
 net-print/cups-filters jpeg png
 sys-apps/smartmontools -caps
 sys-auth/polkit daemon
@@ -53,7 +55,6 @@ sys-devel/binutils -pgo
 sys-fs/cryptsetup -gcrypt -openssl nettle
 sys-fs/fuse suid
 sys-fs/udisks daemon
-sys-libs/llvm-libunwind static-libs
 sys-libs/zlib minizip
 sys-process/lsof rpc
 www-client/links -X

@@ -13,7 +13,8 @@ dev-libs/openssl:0/3
 >=gui-libs/gtk-4.11
 =media-video/ffmpeg-9999
 =media-video/vlc-9999
-=sci-electronics/linuxcnc-*9999*
+=sci-electronics/flexgui-9999
+=sci-electronics/linuxcnc-2.9.9999*
 sys-apps/systemd-utils
 =sys-boot/grub-*rc*
 =sys-boot/syslinux-*pre*

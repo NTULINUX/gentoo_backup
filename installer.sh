@@ -19,8 +19,8 @@ ROOT_MOUNT="/mnt/gentoo-cnc"
 HOME_USER="lcnc"
 HOME_MOUNT_SUBDIR="${ROOT_MOUNT}/home/${HOME_USER}"
 
-STAGE4_TAG="v0.2-alpha"
-STAGE4_NAME="lcnc-x86_64-v2-stage4"
+STAGE4_TAG="v0.3-alpha"
+STAGE4_NAME="lcnc-x86_64-v3-stage4"
 STAGE4_SRCURI="https://github.com/NTULINUX/gentoo_backup/releases/download/${STAGE4_TAG}/${STAGE4_NAME}.tar.xz"
 STAGE4_CHECKSUM="https://github.com/NTULINUX/gentoo_backup/releases/download/${STAGE4_TAG}/${STAGE4_NAME}.sha1sum"
 
@@ -74,31 +74,40 @@ verify_psabi()
 {
 	printf "\\n\\tChecking CPU requirements...\\n"
 
-	X86_64_V2="
+	X86_64_V3="
+		abm
+		avx
+		avx2
+		bmi1
+		bmi2
+		f16c
+		fma
 		mmx
 		mmxext
+		movbe
+		pni
 		popcnt
 		sse
 		sse2
-		sse3
 		ssse3
 		sse4_1
 		sse4_2
+		xsave
 	"
 
-	mapfile -s 1 -t FLAGS < <(printf "%s" "${X86_64_V2}" | sed 's/\t//g')
+	mapfile -s 1 -t FLAGS < <(printf "%s" "${X86_64_V3}" | sed 's/\t//g')
 
 	for (( i=0 ; i < "${#FLAGS[@]}" ; i++ )) ; do
 		if_log printf "\\tChecking for: %s\\n" "${FLAGS[$i]}"
 
-		lscpu | grep "${FLAGS[$i]}" >> /dev/null 2>&1 || \
+		lscpu | grep -o " ${FLAGS[$i]} " >> /dev/null 2>&1 || \
 		{
 			printf "\\tError: Missing: %s\\n" "${FLAGS[$i]}" ;
 			exit 1 ;
 		}
 	done
 
-	printf "\\n\\tDone. Your processor is x86-64-v2 or newer.\\n"
+	printf "\\n\\tDone. Your processor is x86-64-v3 or newer.\\n"
 	printf "\\tYou may safely use the Gentoo image for LinuxCNC.\\n"
 }
 
@@ -117,9 +126,9 @@ linux_ver()
 		exit 1
 	elif [[ "${LINUX_MAJOR_VER}" -gt 6 ||
 		"${LINUX_MAJOR_VER}" -eq 6 && \
-		"${LINUX_MINOR_VER}" -gt 5 ]]
+		"${LINUX_MINOR_VER}" -gt 12 ]]
 	then
-		printf "\\n\\tError: Linux kernel version must not be newer than 6.5\\n"
+		printf "\\n\\tError: Linux kernel version must not be newer than 6.12\\n"
 		exit 1
 	else
 		printf "\\tLinux kernel version: %s\\n" "$(uname -r)"
@@ -1363,7 +1372,7 @@ install_grub()
 	if [[ "${FSTYPE}" == "F2FS" ]] ; then
 		printf "\\tFixing kernel parameters for F2FS...\\n"
 
-		sed -i "s/#GRUB_CMDLINE_LINUX=\"\"/GRUB_CMDLINE_LINUX=\"rootflags=atgc\"/" \
+		sed -i 's/#GRUB_CMDLINE_LINUX=""/GRUB_CMDLINE_LINUX="rootflags=atgc"/' \
 			"${ROOT_MOUNT}/etc/default/grub"
 	fi
 
@@ -1391,13 +1400,10 @@ unmount_all()
 		}
 	fi
 
-	# These can fail
-	set +e
 	umount -l "${ROOT_MOUNT}/dev"
 	umount -l "${ROOT_MOUNT}/sys"
 	umount -l "${ROOT_MOUNT}/proc"
 	umount -l "${ROOT_MOUNT}/run"
-	set -e
 
 	umount "${BOOT_PART}" || \
 	{
