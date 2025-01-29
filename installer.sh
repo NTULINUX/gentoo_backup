@@ -83,7 +83,6 @@ verify_psabi()
 		f16c
 		fma
 		mmx
-		mmxext
 		movbe
 		pni
 		popcnt

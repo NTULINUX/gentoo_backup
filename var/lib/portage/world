@@ -54,6 +54,7 @@ sys-apps/smartmontools
 sys-apps/usbutils
 sys-apps/xdg-desktop-portal-xapp
 sys-boot/grub
+sys-boot/os-prober
 sys-boot/syslinux
 sys-devel/bc
 sys-fs/btrfs-progs
