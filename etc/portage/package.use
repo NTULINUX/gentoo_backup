@@ -13,9 +13,10 @@ dev-libs/libdbusmenu gtk3
 dev-libs/libpcre2 pcre32
 dev-libs/sexpp static-libs
 dev-python/pillow webp tiff
-dev-python/pyqt5 declarative designer gui multimedia printsupport svg webchannel widgets
+dev-python/pyqt5 declarative designer gui multimedia printsupport sql svg webchannel widgets
 dev-python/pyqt6 designer multimedia
-dev-python/pyside6 designer multimedia quick uitools
+dev-python/pyside designer multimedia quick uitools
+dev-python/qtpy designer
 dev-qt/qtbase libproxy
 dev-qt/qtgui jpeg
 dev-qt/qtmultimedia widgets
@@ -25,6 +26,7 @@ gnome-base/gvfs fuse
 kde-apps/k3b mad sndfile taglib
 kde-apps/kate-addons -projects -snippets
 kde-frameworks/kfilemetadata taglib
+kde-plasma/breeze -qt5
 llvm-runtimes/libunwind static-libs
 lxqt-base/lxqt-meta -archiver terminal
 media-gfx/blender -oidn -osl
@@ -49,6 +51,7 @@ media-video/vlc -v4l aom live
 net-analyzer/wireshark -dftest -minizip -netlink -opus -randpkt -randpktdump -plugins -sharkd -text2pcap -tshark -udpdump
 net-libs/libpsl -icu
 net-print/cups-filters jpeg png
+net-wireless/wpa_supplicant -qt6
 sys-apps/smartmontools -caps
 sys-auth/polkit daemon
 sys-devel/binutils -pgo
@@ -62,6 +65,5 @@ x11-apps/mesa-progs -wayland
 x11-base/xwayland libei
 x11-libs/gdk-pixbuf jpeg
 x11-misc/lightdm-gtk-greeter branding
-x11-wm/openbox session
 xfce-base/xfce4-meta archive calendar
 xfce-base/xfce4-session -wayland

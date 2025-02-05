@@ -16,14 +16,12 @@ dev-python/docopt
 dev-python/pip
 dev-python/psutil
 dev-python/pyopengl
-dev-python/pyqt5
-dev-python/pyqt6
 dev-python/pyserial
-dev-python/pyside6
-dev-python/pyside6-tools
+dev-python/python-xlib
 dev-python/pyudev
 dev-python/qscintilla
 dev-python/sqlalchemy
+dev-python/yapps2
 dev-qt/qtchooser
 dev-tcltk/bwidget
 dev-tcltk/tclx
@@ -47,7 +45,7 @@ net-firewall/nftables
 net-ftp/filezilla
 net-irc/hexchat
 net-misc/ntp
-net-vpn/networkmanager-openvpn
+sci-electronics/linuxcnc
 sys-apps/dmidecode
 sys-apps/nvme-cli
 sys-apps/smartmontools
@@ -68,6 +66,7 @@ sys-process/htop
 sys-process/lsof
 www-client/links
 x11-apps/mesa-progs
+x11-libs/gtksourceview
 x11-themes/gentoo-xcursors
 x11-themes/gnome-icon-theme-extras
 xfce-base/xfce4-meta
