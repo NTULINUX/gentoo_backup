@@ -46,7 +46,6 @@ net-ftp/filezilla
 net-irc/hexchat
 net-misc/ntp
 net-vpn/wireguard-tools
-sci-electronics/linuxcnc
 sys-apps/dmidecode
 sys-apps/nvme-cli
 sys-apps/smartmontools
