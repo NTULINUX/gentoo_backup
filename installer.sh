@@ -296,8 +296,8 @@ f2fs_ver()
 
 xfs_ver()
 {
-	XFS_MAJOR_VER=$(mkfs.xfs -V | grep -o [0-9] | sed -n '1p')
-	XFS_MINOR_VER=$(mkfs.xfs -V | grep -o [0-9] | sed -n '2p')
+	XFS_MAJOR_VER=$(mkfs.xfs -V | grep -o "[0-9]" | sed -n '1p')
+	XFS_MINOR_VER=$(mkfs.xfs -V | grep -o "[0-9]" | sed -n '2p')
 
 	if [[ "${XFS_MAJOR_VER}" -lt 6 || \
 		"${XFS_MAJOR_VER}" -eq 6 && \
@@ -402,6 +402,7 @@ legacy_or_uefi()
 \\033[0;33m
 \\tIMPORTANT:
 \\tFor NVMe installation media, UEFI _MUST_ be selected!
+\\tFor USB devices, UEFI is recommended and may not boot otheriwse.
 \\033[0m\\n"
 
 	read -r "INSTALL_TYPE_ARG"
@@ -436,9 +437,10 @@ legacy_or_uefi()
 		then
 			printf "\\tUEFI Runtime Services are supported.\\n"
 		else
-			printf "\\n\\tError: UEFI Runtime Services not supported.
-\\tIf you are using a PREEMPT_RT kernel, you may need to pass: \`efi=runtime\`
-\\ton the kernel command line.\\n"
+			printf "\\n\\tError: UEFI Runtime Services not supported.\\n
+\\tIf you are using a PREEMPT_RT kernel, you will need to pass:\\n\\tefi=runtime
+\\ton the kernel command line.\\n
+\\tYou must also not be booted into an RTAI kernel.\\n"
 			exit 1
 		fi
 	elif [[ -z "${INSTALL_TYPE_ARG}" ]] ; then
@@ -661,11 +663,11 @@ partition_sizes()
 	fi
 
 	# Sane default for boot partition
-	BOOT_PART_SIZE="500M"
+	BOOT_PART_SIZE="512M"
 
 	printf "\\n\\tPlease specify the size for the home partition ( /home )
 \\tin gigabytes (GB.)\\n
-\\tValue must be between 2 and 16000 (2 = 2GB, 16000 = 16TB)
+\\tValue must be between 1 and 16000 (1 = 1GB, 16000 = 16TB)
 \\tValue must be an exact integer.
 \\tDo not specify a unit (i.e. m/M/MB g/G/GB t/T/TB)\\n\\n"
 
@@ -676,7 +678,7 @@ partition_sizes()
 	then
 		printf "\\n\\tError: Value must be an integer.\\n"
 		exit 1
-	elif [[ "${HOME_PART_SIZE}" -lt 2 || \
+	elif [[ "${HOME_PART_SIZE}" -lt 1 || \
 		"${HOME_PART_SIZE}" -gt 16000 ]]
 	then
 		printf "\\n\\tError: Value: %s out of range.\\n" \
@@ -686,7 +688,7 @@ partition_sizes()
 
 	printf "\\n\\tPlease specify the size for the root partition ( / )
 \\tin gigabytes (GB.)\\n
-\\tValue must be between 10 and 16000 (10 = 10GB, 16000 = 16TB)
+\\tValue must be between 12 and 16000 (12 = 12GB, 16000 = 16TB)
 \\tValue must be an exact integer.
 \\tDo not specify a unit (i.e. m/M/MB g/G/GB t/T/TB)\\n\\n"
 
@@ -697,7 +699,7 @@ partition_sizes()
 	then
 		printf "\\n\\tError: Value must be an integer.\\n"
 		exit 1
-	elif [[ "${ROOT_PART_SIZE}" -lt 10 || \
+	elif [[ "${ROOT_PART_SIZE}" -lt 12 || \
 		"${ROOT_PART_SIZE}" -gt 16000 ]]
 	then
 		printf "\\n\\tError: Value: %s out of range.\\n" \
@@ -906,9 +908,11 @@ format_partitions()
 			exit 1 ;
 		}
 	elif [[ "${FSTYPE}" == "F2FS" ]] ; then
+		# Support extended attributes and basic error detection/correction
 		F2FS_DEFAULTS="extra_attr,inode_checksum,sb_checksum"
 
 		printf "\\tF2FS selected. Using safe defaults...\\n"
+
 		# F2FS xattr currently not supported in GRUB, exclude for /boot
 		# (no compression)
 		if_log mkfs.f2fs "${BOOT_PART}" || \
@@ -959,6 +963,11 @@ format_partitions()
 
 mount_init_filesystems()
 {
+	# Safe defaults for F2FS (no compression)
+	if [[ "${FSTYPE}" == "F2FS" ]] ; then
+		F2FS_MOUNT_OPTS="atgc,gc_merge,lazytime"
+	fi
+
 	printf "\\n\\tPreparing for installation...\\n"
 
 	printf "\\tEnsuring directory: %s does not exist...\\n" "${ROOT_MOUNT}"
@@ -1002,12 +1011,21 @@ mount_init_filesystems()
 
 	printf "\\tMounting root filesystem...\\n"
 
-	mount "${ROOT_PART}" "${ROOT_MOUNT}" || \
-	{
-		printf "\\n\\tError: Failed to mount: %s to: %s\\n" \
-			"${ROOT_PART}" "${ROOT_MOUNT}" ;
-		exit 1 ;
-	}
+	if [[ "${FSTYPE}" == "F2FS" ]] ; then
+		mount "${ROOT_PART}" -o "${F2FS_MOUNT_OPTS}" "${ROOT_MOUNT}" || \
+		{
+			printf "\\n\\tError: Failed to mount: %s to: %s\\n" \
+				"${ROOT_PART}" "${ROOT_MOUNT}" ;
+			exit 1 ;
+		}
+	else
+		mount "${ROOT_PART}" "${ROOT_MOUNT}" || \
+		{
+			printf "\\n\\tError: Failed to mount: %s to: %s\\n" \
+				"${ROOT_PART}" "${ROOT_MOUNT}" ;
+			exit 1 ;
+		}
+	fi
 
 	printf "\\tMounting boot filesystem...\\n"
 
@@ -1018,12 +1036,21 @@ mount_init_filesystems()
 		exit 1 ;
 	}
 
-	mount "${BOOT_PART}" "${ROOT_MOUNT}/boot" || \
-	{
-		printf "\\n\\tError: Failed to mount: %s to: %s\\n" \
-			"${BOOT_PART}" "${ROOT_MOUNT}/boot" ;
-		exit 1 ;
-	}
+	if [[ "${FSTYPE}" == "F2FS" ]] ; then
+		mount "${BOOT_PART}" -o "${F2FS_MOUNT_OPTS}" "${ROOT_MOUNT}/boot" || \
+		{
+			printf "\\n\\tError: Failed to mount: %s to: %s\\n" \
+				"${ROOT_PART}" "${ROOT_MOUNT}/boot" ;
+			exit 1 ;
+		}
+	else
+		mount "${BOOT_PART}" "${ROOT_MOUNT}/boot" || \
+		{
+			printf "\\n\\tError: Failed to mount: %s to: %s\\n" \
+				"${BOOT_PART}" "${ROOT_MOUNT}/boot" ;
+			exit 1 ;
+		}
+	fi
 
 	printf "\\tMounting home directory...\\n"
 
@@ -1034,12 +1061,21 @@ mount_init_filesystems()
 		exit 1 ;
 	}
 
-	mount "${HOME_PART}" "${ROOT_MOUNT}/home" || \
-	{
-		printf "\\n\\tError: Failed to mount: %s to: %s\\n" \
-			"${HOME_PART}" "${ROOT_MOUNT}/home" ;
-		exit 1 ;
-	}
+	if [[ "${FSTYPE}" == "F2FS" ]] ; then
+		mount "${HOME_PART}" -o "${F2FS_MOUNT_OPTS}" "${ROOT_MOUNT}/home" || \
+		{
+			printf "\\n\\tError: Failed to mount: %s to: %s\\n" \
+				"${HOME_PART}" "${ROOT_MOUNT}/home" ;
+			exit 1 ;
+		}
+	else
+		mount "${HOME_PART}" "${ROOT_MOUNT}/home" || \
+		{
+			printf "\\n\\tError: Failed to mount: %s to: %s\\n" \
+				"${HOME_PART}" "${ROOT_MOUNT}/home" ;
+			exit 1 ;
+		}
+	fi
 
 	printf "\\n\\tDone.\\n"
 }
@@ -1227,11 +1263,6 @@ mount_final_filesystems()
 generate_fstab()
 {
 	printf "\\n\\tGenerating fstab file...\\n"
-
-	# Safe defaults for F2FS (no compression)
-	if [[ "${FSTYPE}" == "F2FS" ]] ; then
-		F2FS_MOUNT_OPTS="atgc,gc_merge,lazytime"
-	fi
 
 	printf "%b\\n" \
 "# /etc/fstab: static file system information.
