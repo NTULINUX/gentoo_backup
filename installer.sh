@@ -20,11 +20,9 @@ HOME_USER="lcnc"
 HOME_MOUNT_SUBDIR="${ROOT_MOUNT}/home/${HOME_USER}"
 
 STAGE4_TAG="v0.3-alpha"
-STAGE4_NAME="stage4-lcnc-x86_64-v3"
-STAGE4_SRCURI_01="https://github.com/NTULINUX/gentoo_backup/releases/download/${STAGE4_TAG}/${STAGE4_NAME}_part01.tar.xz"
-STAGE4_SRCURI_02="https://github.com/NTULINUX/gentoo_backup/releases/download/${STAGE4_TAG}/${STAGE4_NAME}_part02.tar.xz"
-STAGE4_CHECKSUM_01="https://github.com/NTULINUX/gentoo_backup/releases/download/${STAGE4_TAG}/${STAGE4_NAME}_part01.sha1sum"
-STAGE4_CHECKSUM_02="https://github.com/NTULINUX/gentoo_backup/releases/download/${STAGE4_TAG}/${STAGE4_NAME}_part02.sha1sum"
+STAGE4_NAME="lcnc-x86_64-v3-stage4"
+STAGE4_SRCURI="https://github.com/NTULINUX/gentoo_backup/releases/download/${STAGE4_TAG}/${STAGE4_NAME}.tar.xz"
+STAGE4_CHECKSUM="https://github.com/NTULINUX/gentoo_backup/releases/download/${STAGE4_TAG}/${STAGE4_NAME}.sha1sum"
 
 verbose_prompt()
 {
@@ -1097,29 +1095,15 @@ fetch_stage4()
 	}
 
 	# 10 second timeout, 5 tries
-	if_log wget -T 10 -t 5 "${STAGE4_SRCURI_01}" || \
+	if_log wget -T 10 -t 5 "${STAGE4_SRCURI}" || \
 	{
-		printf "\\n\\tError: Failed to fetch part 1/2 of stage4 tarball.\\n" ;
+		printf "\\n\\tError: Failed to fetch stage4 tarball.\\n" ;
 		exit 1 ;
 	}
 
-	# 10 second timeout, 5 tries
-	if_log wget -T 10 -t 5 "${STAGE4_SRCURI_02}" || \
+	if_log wget -T 10 -t 5 "${STAGE4_CHECKSUM}" || \
 	{
-		printf "\\n\\tError: Failed to fetch part 2/2 of stage4 tarball.\\n" ;
-		exit 1 ;
-	}
-
-
-	if_log wget -T 10 -t 5 "${STAGE4_CHECKSUM_01}" || \
-	{
-		printf "\\n\\tError: Failed to fetch part 1/2 of stage4 checksum.\\n" ;
-		exit 1 ;
-	}
-
-	if_log wget -T 10 -t 5 "${STAGE4_CHECKSUM_02}" || \
-	{
-		printf "\\n\\tError: Failed to fetch part 2/2 of stage4 checksum.\\n" ;
+		printf "\\n\\tError: Failed to fetch stage4 checksum.\\n" ;
 		exit 1 ;
 	}
 
@@ -1128,31 +1112,18 @@ fetch_stage4()
 
 verify_stage4()
 {
-	printf "\\n\\tVerifying integrity of stage4 tarballs...\\n"
+	printf "\\n\\tVerifying integrity of stage4 tarball...\\n"
 
-	if [[ -r "${ROOT_MOUNT}/${STAGE4_NAME}_part01.sha1sum" ]] ; then
-		sha1sum -c "${ROOT_MOUNT}/${STAGE4_NAME}_part01.sha1sum" || \
+	if [[ -r "${ROOT_MOUNT}/${STAGE4_NAME}.sha1sum" ]] ; then
+		sha1sum -c "${ROOT_MOUNT}/${STAGE4_NAME}.sha1sum" || \
 		{
 			printf "\\n\\tError: Failed to verify checksum on: %s\\n" \
-				"${ROOT_MOUNT}/${STAGE4_NAME}_part01.tar.xz"
+				"${ROOT_MOUNT}/${STAGE4_NAME}.tar.xz" 
 			exit 1 ;
 		}
 	else
 		printf "\\n\\tUnable to read checksum file: %s\\n" \
-			"${ROOT_MOUNT}/${STAGE4_NAME}_part01.sha1sum"
-		exit 1
-	fi
-
-	if [[ -r "${ROOT_MOUNT}/${STAGE4_NAME}_part02.sha1sum" ]] ; then
-		sha1sum -c "${ROOT_MOUNT}/${STAGE4_NAME}_part02.sha1sum" || \
-		{
-			printf "\\n\\tError: Failed to verify checksum on: %s\\n" \
-				"${ROOT_MOUNT}/${STAGE4_NAME}_part02.tar.xz"
-			exit 1 ;
-		}
-	else
-		printf "\\n\\tUnable to read checksum file: %s\\n" \
-			"${ROOT_MOUNT}/${STAGE4_NAME}_part02.sha1sum"
+			"${ROOT_MOUNT}/${STAGE4_NAME}.sha1sum"
 		exit 1
 	fi
 
@@ -1164,33 +1135,17 @@ install_stage4()
 	printf "\\n\\tInstalling Gentoo for LinuxCNC.
 \\tThis may take awhile...\\n"
 
-	if [[ -r "${ROOT_MOUNT}/${STAGE4_NAME}_part01.tar.xz" ]] ; then
+	if [[ -r "${ROOT_MOUNT}/${STAGE4_NAME}.tar.xz" ]] ; then
 		tar --numeric-owner --xattrs-include='*.*' \
-			-xpf "${ROOT_MOUNT}/${STAGE4_NAME}_part01.tar.xz" -C "${ROOT_MOUNT}/" || \
+			-xpf "${ROOT_MOUNT}/${STAGE4_NAME}.tar.xz" -C "${ROOT_MOUNT}/" || \
 			{
 				printf "\\n\\tError: Failed to decompress: %s to: %s\\n" \
-					"${ROOT_MOUNT}/${STAGE4_NAME}_part01.tar.xz" "${ROOT_MOUNT}/" ;
+					"${ROOT_MOUNT}/${STAGE4_NAME}.tar.xz" "${ROOT_MOUNT}/" ;
 				exit 1 ;
 			}
 	else
 		printf "\\n\\tError: Unable to read stage4 tarball: %s\\n" \
-			"${ROOT_MOUNT}/${STAGE4_NAME}_part01.tar.xz"
-	fi
-
-	# sync disks before decompressing part 2/2 of stage4
-	sleep 5 && sync
-
-	if [[ -r "${ROOT_MOUNT}/${STAGE4_NAME}_part02.tar.xz" ]] ; then
-		tar --numeric-owner --xattrs-include='*.*' \
-			-xpf "${ROOT_MOUNT}/${STAGE4_NAME}_part02.tar.xz" -C "${ROOT_MOUNT}/" || \
-			{
-				printf "\\n\\tError: Failed to decompress: %s to: %s\\n" \
-					"${ROOT_MOUNT}/${STAGE4_NAME}_part02.tar.xz" "${ROOT_MOUNT}/" ;
-				exit 1 ;
-			}
-	else
-		printf "\\n\\tError: Unable to read stage4 tarball: %s\\n" \
-			"${ROOT_MOUNT}/${STAGE4_NAME}_part02.tar.xz"
+			"${ROOT_MOUNT}/${STAGE4_NAME}.tar.xz"
 	fi
 
 	sleep 5 && sync
@@ -1498,7 +1453,7 @@ unmount_all()
 	sleep 5 && sync
 
 	# Required for unmounting root partition
-	cd "${HOME}"
+	cd
 
 	umount "${ROOT_PART}" || \
 	{
