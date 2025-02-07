@@ -763,10 +763,11 @@ partition_drive()
 		printf "\\tEFI system partition: %s\\n" "${EFI_PART_SIZE}"
 	fi
 
-	printf "\\tLinux extended boot partition ( /boot ): %s
+	printf "\\tLinux extended boot partition ( /boot ): %s ( %s )
 \\tLinux home partition ( /home ): %sG ( %s )
 \\tLinux root (x86-64) partition ( / ): %sG ( %s )\\n" \
-	"${BOOT_PART_SIZE}" "${HOME_PART_SIZE}" "${FSTYPE}" \
+	"${BOOT_PART_SIZE}" "${FSTYPE}" \
+	"${HOME_PART_SIZE}" "${FSTYPE}" \
 	"${ROOT_PART_SIZE}" "${FSTYPE}"
 
 	sfdisk_die()
