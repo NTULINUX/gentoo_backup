@@ -1453,7 +1453,7 @@ unmount_all()
 	sleep 5 && sync
 
 	# Required for unmounting root partition
-	cd
+	cd "${HOME}"
 
 	umount "${ROOT_PART}" || \
 	{
