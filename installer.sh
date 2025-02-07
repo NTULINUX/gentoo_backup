@@ -862,8 +862,8 @@ format_partitions()
 	if [[ "${INSTALL_TYPE}" == "UEFI" ]] ; then
 		if_log mkfs.fat -F 32 "${EFI_PART}" || \
 		{
-			printf "\\n\\tError: Failed to format: %s as: FAT32\\n" \
-				"${BOOT_PART}" "${FSTYPE}" ;
+			printf "\\n\\tError: Failed to format: %s as: %s\\n" \
+				"${EFI_PART}" "FAT32" ;
 			exit 1 ;
 		}
 	fi
