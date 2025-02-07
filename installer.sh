@@ -760,7 +760,7 @@ partition_drive()
 	if [[ "${INSTALL_TYPE}" == "LEGACY" ]] ; then
 		printf "\\tBIOS boot partition: %s\\n" "${BIOS_PART_SIZE}"
 	elif [[ "${INSTALL_TYPE}" == "UEFI" ]] ; then
-		printf "\\tEFI system partition: %s\\n" "${EFI_PART_SIZE}"
+		printf "\\tEFI system partition ( /efi ): %s ( %s )\\n" "${EFI_PART_SIZE}" "FAT32"
 	fi
 
 	printf "\\tLinux extended boot partition ( /boot ): %s ( %s )
