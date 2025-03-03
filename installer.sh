@@ -132,10 +132,10 @@ rtai_or_preempt_rt()
 		printf "\\n\\tError: Invalid selection: %s\\n" "${REALTIME_ARG}"
 		exit 1
 	fi
-}
 
-STAGE4_SRCURI="https://github.com/NTULINUX/gentoo_backup/releases/download/${STAGE4_TAG}/${STAGE4_NAME}.tar.xz"
-STAGE4_CHECKSUM="https://github.com/NTULINUX/gentoo_backup/releases/download/${STAGE4_TAG}/${STAGE4_NAME}.sha1sum"
+	STAGE4_SRCURI="https://github.com/NTULINUX/gentoo_backup/releases/download/${STAGE4_TAG}/${STAGE4_NAME}.tar.xz"
+	STAGE4_CHECKSUM="https://github.com/NTULINUX/gentoo_backup/releases/download/${STAGE4_TAG}/${STAGE4_NAME}.b3sum"
+}
 
 linux_ver()
 {
@@ -431,6 +431,12 @@ check_deps()
 	type wget >> /dev/null 2>&1 || \
 	{
 		printf "\\n\\tError: wget not installed.\\n" ;
+		exit 1 ;
+	}
+
+	type b3sum >> /dev/null 2>&1 || \
+	{
+		printf "\\n\\tError: b3sum not installed.\\n" ;
 		exit 1 ;
 	}
 
@@ -1158,8 +1164,8 @@ verify_stage4()
 {
 	printf "\\n\\tVerifying integrity of stage4 tarball...\\n"
 
-	if [[ -r "${ROOT_MOUNT}/${STAGE4_NAME}.sha1sum" ]] ; then
-		sha1sum -c "${ROOT_MOUNT}/${STAGE4_NAME}.sha1sum" || \
+	if [[ -r "${ROOT_MOUNT}/${STAGE4_NAME}.b3sum" ]] ; then
+		b3sum -c "${ROOT_MOUNT}/${STAGE4_NAME}.b3sum" || \
 		{
 			printf "\\n\\tError: Failed to verify checksum on: %s\\n" \
 				"${ROOT_MOUNT}/${STAGE4_NAME}.tar.xz" 
@@ -1167,7 +1173,7 @@ verify_stage4()
 		}
 	else
 		printf "\\n\\tUnable to read checksum file: %s\\n" \
-			"${ROOT_MOUNT}/${STAGE4_NAME}.sha1sum"
+			"${ROOT_MOUNT}/${STAGE4_NAME}.b3sum"
 		exit 1
 	fi
 

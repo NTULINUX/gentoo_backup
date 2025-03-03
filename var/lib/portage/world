@@ -1,11 +1,12 @@
 app-admin/sudo
 app-arch/lz4
 app-arch/lzop
+app-crypt/b3sum
 app-editors/nano
 app-editors/vim
 app-misc/screen
-app-portage/eix
 app-portage/gentoolkit
+app-portage/pycargoebuild
 dev-libs/elfutils
 dev-libs/libmodbus
 dev-libs/libtraceevent
@@ -45,7 +46,9 @@ net-firewall/nftables
 net-ftp/filezilla
 net-irc/hexchat
 net-misc/ntp
+net-vpn/openvpn
 net-vpn/wireguard-tools
+sci-electronics/mesaflash
 sys-apps/dmidecode
 sys-apps/nvme-cli
 sys-apps/smartmontools

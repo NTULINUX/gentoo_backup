@@ -26,7 +26,6 @@ gnome-base/gvfs fuse
 kde-apps/k3b mad sndfile taglib
 kde-apps/kate-addons -projects -snippets
 kde-frameworks/kfilemetadata taglib
-kde-plasma/breeze -qt5
 llvm-runtimes/libunwind static-libs
 lxqt-base/lxqt-meta -archiver terminal
 media-gfx/blender -oidn -osl
