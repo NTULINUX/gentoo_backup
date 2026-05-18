@@ -133,7 +133,8 @@ rtai_or_preempt_rt()
 		exit 1
 	fi
 
-	STAGE4_SRCURI="https://github.com/NTULINUX/gentoo_backup/releases/download/${STAGE4_TAG}/${STAGE4_NAME}.tar.xz"
+	STAGE4_SRCURI_PART01="https://github.com/NTULINUX/gentoo_backup/releases/download/${STAGE4_TAG}/${STAGE4_NAME}.tar.xz.part01"
+	STAGE4_SRCURI_PART02="https://github.com/NTULINUX/gentoo_backup/releases/download/${STAGE4_TAG}/${STAGE4_NAME}.tar.xz.part02"
 	STAGE4_CHECKSUM="https://github.com/NTULINUX/gentoo_backup/releases/download/${STAGE4_TAG}/${STAGE4_NAME}.b2sum"
 }
 
@@ -732,7 +733,7 @@ partition_sizes()
 
 	printf "\\n\\tPlease specify the size for the root partition ( / )
 \\tin gigabytes (GB.)\\n
-\\tValue must be between 12 and 16000 (12 = 12GB, 16000 = 16TB)
+\\tValue must be between 16 and 16000 (16 = 12GB, 16000 = 16TB)
 \\tValue must be an exact integer.
 \\tDo not specify a unit (i.e. m/M/MB g/G/GB t/T/TB)\\n\\n"
 
@@ -743,7 +744,7 @@ partition_sizes()
 	then
 		printf "\\n\\tError: Value must be an integer.\\n"
 		exit 1
-	elif [[ "${ROOT_PART_SIZE}" -lt 12 || \
+	elif [[ "${ROOT_PART_SIZE}" -lt 16 || \
 		"${ROOT_PART_SIZE}" -gt 16000 ]]
 	then
 		printf "\\n\\tError: Value: %s out of range.\\n" \
@@ -1139,9 +1140,15 @@ fetch_stage4()
 	}
 
 	# 10 second timeout, 5 tries
-	if_log wget -T 10 -t 5 "${STAGE4_SRCURI}" || \
+	if_log wget -T 10 -t 5 "${STAGE4_SRCURI_PART01}" || \
 	{
-		printf "\\n\\tError: Failed to fetch stage4 tarball.\\n" ;
+		printf "\\n\\tError: Failed to fetch stage4 (1/2) tarball.\\n" ;
+		exit 1 ;
+	}
+
+	if_log wget -T 10 -t 5 "${STAGE4_SRCURI_PART02}" || \
+	{
+		printf "\\n\\tError: Failed to fetch stage4 (2/2) tarball.\\n" ;
 		exit 1 ;
 	}
 
@@ -1156,18 +1163,17 @@ fetch_stage4()
 
 verify_stage4()
 {
-	printf "\\n\\tVerifying integrity of stage4 tarball...\\n"
+	printf "\\n\\tVerifying integrity of stage4 tarballs...\\n"
 
-	if [[ -r "${ROOT_MOUNT}/${STAGE4_NAME}.b3sum" ]] ; then
-		b3sum -c "${ROOT_MOUNT}/${STAGE4_NAME}.b3sum" || \
+	if [[ -r "${ROOT_MOUNT}/${STAGE4_NAME}.b2sum" ]] ; then
+		b2sum -c "${ROOT_MOUNT}/${STAGE4_NAME}.b2sum" || \
 		{
-			printf "\\n\\tError: Failed to verify checksum on: %s\\n" \
-				"${ROOT_MOUNT}/${STAGE4_NAME}.tar.xz" 
+			printf "\\n\\tError: Failed to verify checksum on stage4 tarballs.\\n." ;
 			exit 1 ;
 		}
 	else
 		printf "\\n\\tUnable to read checksum file: %s\\n" \
-			"${ROOT_MOUNT}/${STAGE4_NAME}.b3sum"
+			"${ROOT_MOUNT}/${STAGE4_NAME}.b2sum"
 		exit 1
 	fi
 
@@ -1179,17 +1185,19 @@ install_stage4()
 	printf "\\n\\tInstalling Gentoo for LinuxCNC.
 \\tThis may take awhile...\\n"
 
-	if [[ -r "${ROOT_MOUNT}/${STAGE4_NAME}.tar.xz" ]] ; then
-		tar --numeric-owner --xattrs-include='*.*' \
-			-xpf "${ROOT_MOUNT}/${STAGE4_NAME}.tar.xz" -C "${ROOT_MOUNT}/" || \
-			{
-				printf "\\n\\tError: Failed to decompress: %s to: %s\\n" \
-					"${ROOT_MOUNT}/${STAGE4_NAME}.tar.xz" "${ROOT_MOUNT}/" ;
-				exit 1 ;
-			}
+	if [[ -r "${ROOT_MOUNT}/${STAGE4_NAME}.tar.xz.part01" && \
+		-r "${ROOT_MOUNT}/${STAGE4_NAME}.tar.xz.part02" ]] ; then
+			cat "${ROOT_MOUNT}/${STAGE4_NAME}.tar.xz.part01" \
+				"${ROOT_MOUNT}/${STAGE4_NAME}.tar.xz.part02" | \
+				tar -xpJf - --numeric-owner --xattrs-include='*.*' -C "${ROOT_MOUNT}/" || \
+				{
+					printf "\\n\\tError: Failed to decompress stage4 tarballs to: %s\\n" \
+						"${ROOT_MOUNT}/" ;
+					exit 1 ;
+				}
 	else
-		printf "\\n\\tError: Unable to read stage4 tarball: %s\\n" \
-			"${ROOT_MOUNT}/${STAGE4_NAME}.tar.xz"
+		printf "\\n\\tError: Unable to read stage4 tarballs."
+		exit 1
 	fi
 
 	sleep 5 && sync
