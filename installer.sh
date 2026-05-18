@@ -134,7 +134,7 @@ rtai_or_preempt_rt()
 	fi
 
 	STAGE4_SRCURI="https://github.com/NTULINUX/gentoo_backup/releases/download/${STAGE4_TAG}/${STAGE4_NAME}.tar.xz"
-	STAGE4_CHECKSUM="https://github.com/NTULINUX/gentoo_backup/releases/download/${STAGE4_TAG}/${STAGE4_NAME}.b3sum"
+	STAGE4_CHECKSUM="https://github.com/NTULINUX/gentoo_backup/releases/download/${STAGE4_TAG}/${STAGE4_NAME}.b2sum"
 }
 
 linux_ver()
@@ -149,12 +149,6 @@ linux_ver()
 		"${LINUX_MINOR_VER}" -lt 1 ]]
 	then
 		printf "\\n\\tError: Linux kernel version must be at least 6.1\\n"
-		exit 1
-	elif [[ "${LINUX_MAJOR_VER}" -gt 6 ||
-		"${LINUX_MAJOR_VER}" -eq 6 && \
-		"${LINUX_MINOR_VER}" -gt 12 ]]
-	then
-		printf "\\n\\tError: Linux kernel version must not be newer than 6.12\\n"
 		exit 1
 	else
 		printf "\\tLinux kernel version: %s\\n" "$(uname -r)"
@@ -434,9 +428,9 @@ check_deps()
 		exit 1 ;
 	}
 
-	type b3sum >> /dev/null 2>&1 || \
+	type b2sum >> /dev/null 2>&1 || \
 	{
-		printf "\\n\\tError: b3sum not installed.\\n" ;
+		printf "\\n\\tError: b2sum not found.\\n" ;
 		exit 1 ;
 	}
 
