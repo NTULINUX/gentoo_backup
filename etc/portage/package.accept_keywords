@@ -1,7 +1,5 @@
 # Accept/Restrict keywords
-dev-db/sqlite -~amd64
-gui-libs/vte-common -~amd64
-media-gfx/gimp **
-media-video/ffmpeg **
-media-video/vlc **
-x11-libs/vte -~amd64
+
+dev-util/spirv-llvm-translator -~amd64
+llvm-core/* -~amd64
+llvm-runtimes/* -~amd64

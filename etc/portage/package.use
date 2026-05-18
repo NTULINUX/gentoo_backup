@@ -1,68 +1,21 @@
-#
 # Package-specific USE flags
-#
 
-app-arch/libarchive lzo lz4
-app-arch/tar minimal
-app-crypt/gcr gtk
-app-office/libreoffice pdfimport
-app-shells/bash -net
-app-text/poppler cairo nss png qt5 tiff
 app-text/xmlto text
-dev-libs/libdbusmenu gtk3
-dev-libs/libpcre2 pcre32
-dev-libs/sexpp static-libs
-dev-python/pillow webp tiff
-dev-python/pyqt5 declarative designer gui multimedia printsupport sql svg webchannel widgets
-dev-python/pyqt6 designer multimedia
-dev-python/pyside designer multimedia quick uitools
+dev-lang/rust dist
+dev-python/pyqt6 designer
+dev-python/pyside designer quick tools uitools
 dev-python/qtpy designer
 dev-qt/qtbase libproxy
-dev-qt/qtgui jpeg
-dev-qt/qtmultimedia widgets
 dev-qt/qttools designer
-dev-qt/qtwebengine widgets
+dev-qt/qtwebengine designer
 gnome-base/gvfs fuse
-kde-apps/k3b mad sndfile taglib
-kde-apps/kate-addons -projects -snippets
-kde-frameworks/kfilemetadata taglib
 llvm-runtimes/libunwind static-libs
-lxqt-base/lxqt-meta -archiver terminal
-media-gfx/blender -oidn -osl
-media-gfx/gimp postscript webp
-media-gfx/inkscape jpeg postscript svg2
-media-gfx/krita color-management pdf vc
-media-libs/babl lcms
-media-libs/freetype brotli
-media-libs/gegl cairo lcms
-media-libs/libcanberra -udev
-media-libs/libsdl2 sound
-media-libs/libsndfile minimal
-media-libs/opencv contrib contribdnn jpeg png tiff
-media-libs/opus custom-modes
-media-libs/portaudio alsa
-media-libs/tiff jpeg
-media-sound/audacity ffmpeg id3tag sbsms
-media-sound/jack2 alsa
-media-video/ffmpeg libaom openssl webp
+media-libs/freetype utils
 media-video/pipewire extra
-media-video/vlc -v4l aom live
-net-analyzer/wireshark -dftest -minizip -netlink -opus -randpkt -randpktdump -plugins -sharkd -text2pcap -tshark -udpdump
-net-libs/libpsl -icu
-net-print/cups-filters jpeg png
-net-wireless/wpa_supplicant -qt6
-sys-apps/smartmontools -caps
-sys-auth/polkit daemon
-sys-devel/binutils -pgo
-sys-fs/cryptsetup -gcrypt -openssl nettle
-sys-fs/fuse suid
-sys-fs/udisks daemon
+sci-libs/hdf5 unsupported
+sci-libs/lapack deprecated
+sci-libs/vtk imaging tbb
 sys-libs/zlib minizip
-sys-process/lsof rpc
-www-client/links -X
-x11-apps/mesa-progs -wayland
 x11-base/xwayland libei
-x11-libs/gdk-pixbuf jpeg
-x11-misc/lightdm-gtk-greeter branding
-xfce-base/xfce4-meta archive calendar
-xfce-base/xfce4-session -wayland
+x11-libs/qscintilla designer
+xfce-base/xfce4-meta archive calendar image search
