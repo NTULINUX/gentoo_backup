@@ -3,7 +3,7 @@ flush ruleset
 table ip filter {
 	chain incoming {
 		type filter hook input priority 0; policy drop;
-		iif "lo" ip daddr 127.0.0.1 ip saddr 127.0.0.1 accept
+		iif "lo" accept
 		ct state 0x2,0x4 accept
 	}
 
