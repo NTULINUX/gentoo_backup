@@ -128,6 +128,8 @@ rtai_or_preempt_rt()
 		printf "\\tRTAI selected, forcing EXT4 filesystem.\\n"
 		FSTYPE="EXT4"
 		STAGE4_NAME="stage4-rtai-lcnc-x86_64-v3"
+		printf "\\tNot implemented yet.\\n"
+		exit 0
 	else
 		printf "\\n\\tError: Invalid selection: %s\\n" "${REALTIME_ARG}"
 		exit 1
