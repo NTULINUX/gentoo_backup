@@ -19,7 +19,7 @@ ROOT_MOUNT="/mnt/gentoo-cnc"
 HOME_USER="lcnc"
 HOME_MOUNT_SUBDIR="${ROOT_MOUNT}/home/${HOME_USER}"
 
-STAGE4_TAG="v0.3-alpha"
+STAGE4_TAG="v0.4-alpha"
 
 verbose_prompt()
 {
