@@ -23,6 +23,7 @@ net-print/gutenprint
 sci-electronics/linuxcnc
 sci-electronics/mesaflash
 sci-libs/flexgui
+sci-misc/halviewer
 sys-apps/dmidecode
 sys-apps/nvme-cli
 sys-apps/smartmontools
