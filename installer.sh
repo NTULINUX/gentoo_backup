@@ -714,7 +714,7 @@ partition_sizes()
 
 	printf "\\n\\tPlease specify the size for the home partition ( /home )
 \\tin gigabytes (GB.)\\n
-\\tValue must be between 1 and 16000 (1 = 1GB, 16000 = 16TB)
+\\tValue must be between 2 and 16000 (2 = 2GB, 16000 = 16TB)
 \\tValue must be an exact integer.
 \\tDo not specify a unit (i.e. m/M/MB g/G/GB t/T/TB)\\n\\n"
 
@@ -725,7 +725,7 @@ partition_sizes()
 	then
 		printf "\\n\\tError: Value must be an integer.\\n"
 		exit 1
-	elif [[ "${HOME_PART_SIZE}" -lt 1 || \
+	elif [[ "${HOME_PART_SIZE}" -lt 2 || \
 		"${HOME_PART_SIZE}" -gt 16000 ]]
 	then
 		printf "\\n\\tError: Value: %s out of range.\\n" \
@@ -1137,7 +1137,7 @@ fetch_stage4()
 
 	cd "${ROOT_MOUNT}" || \
 	{
-		printf "Failed to change directory to: %s\\n" "${ROOT_MOUNT}" ;
+		printf "Error: Failed to change directory to: %s\\n" "${ROOT_MOUNT}" ;
 		exit 1 ;
 	}
 
@@ -1174,7 +1174,7 @@ verify_stage4()
 			exit 1 ;
 		}
 	else
-		printf "\\n\\tUnable to read checksum file: %s\\n" \
+		printf "\\n\\tError: Unable to read checksum file: %s\\n" \
 			"${ROOT_MOUNT}/${STAGE4_NAME}.b2sum"
 		exit 1
 	fi
@@ -1517,6 +1517,9 @@ unmount_all()
 			"${HOME_PART}" ;
 		exit 1 ;
 	}
+
+	printf "\\tRemoving stage4 files from final installation...\\n"
+	rm -f "${ROOT_MOUNT}/${STAGE4_NAME}."*
 
 	sleep 5 && sync
 
