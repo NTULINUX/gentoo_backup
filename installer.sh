@@ -20,6 +20,10 @@ HOME_USER="lcnc"
 HOME_MOUNT_SUBDIR="${ROOT_MOUNT}/home/${HOME_USER}"
 
 STAGE4_TAG="v0.4-alpha"
+STAGE4_NAME="stage4-preempt_rt-lcnc-x86_64-v3"
+STAGE4_SRCURI_PART01="https://github.com/NTULINUX/gentoo_backup/releases/download/${STAGE4_TAG}/${STAGE4_NAME}.tar.xz.part01"
+STAGE4_SRCURI_PART02="https://github.com/NTULINUX/gentoo_backup/releases/download/${STAGE4_TAG}/${STAGE4_NAME}.tar.xz.part02"
+STAGE4_CHECKSUM="https://github.com/NTULINUX/gentoo_backup/releases/download/${STAGE4_TAG}/${STAGE4_NAME}.b2sum"
 
 verbose_prompt()
 {
@@ -107,39 +111,6 @@ verify_psabi()
 	printf "\\tYou may safely use the Gentoo image for LinuxCNC.\\n"
 }
 
-rtai_or_preempt_rt()
-{
-	printf "\\n\\tPlease select RTAI or PREEMPT_RT.\\n
-\\tValid options:
-\\t\\tPREEMPT_RT/preempt_rt
-\\t\\tRTAI/rtai (WIP)\\n\\n"
-
-	read -r "REALTIME_ARG"
-
-	if [[ "${REALTIME_ARG}" == PREEMPT_RT || \
-		"${REALTIME_ARG}" == preempt_rt ]]
-	then
-		REALTIME="PREEMPT_RT"
-		STAGE4_NAME="stage4-preempt_rt-lcnc-x86_64-v3"
-	elif [[ "${REALTIME_ARG}" == RTAI || \
-		"${REALTIME_ARG}" == rtai ]]
-	then
-		REALTIME="RTAI"
-		printf "\\tRTAI selected, forcing EXT4 filesystem.\\n"
-		FSTYPE="EXT4"
-		STAGE4_NAME="stage4-rtai-lcnc-x86_64-v3"
-		printf "\\tNot implemented yet.\\n"
-		exit 0
-	else
-		printf "\\n\\tError: Invalid selection: %s\\n" "${REALTIME_ARG}"
-		exit 1
-	fi
-
-	STAGE4_SRCURI_PART01="https://github.com/NTULINUX/gentoo_backup/releases/download/${STAGE4_TAG}/${STAGE4_NAME}.tar.xz.part01"
-	STAGE4_SRCURI_PART02="https://github.com/NTULINUX/gentoo_backup/releases/download/${STAGE4_TAG}/${STAGE4_NAME}.tar.xz.part02"
-	STAGE4_CHECKSUM="https://github.com/NTULINUX/gentoo_backup/releases/download/${STAGE4_TAG}/${STAGE4_NAME}.b2sum"
-}
-
 linux_ver()
 {
 	printf "\\tChecking Linux kernel version...\\n"
@@ -174,89 +145,55 @@ linux_config_check()
 	printf "\\n\\tCurrent kernel configuration found.
 \\tEnsuring Linux kernel has proper filesystem support...\\n"
 
-	if [[ "${REALTIME}" == "PREEMPT_RT" ]] ; then
-		BTRFS_OPTIONS="
-			BTRFS_FS
-			BTRFS_FS_POSIX_ACL
-		"
-
-		F2FS_OPTIONS="
-			F2FS_FS
-			F2FS_FS_XATTR
-			F2FS_FS_POSIX_ACL
-		"
-
-		XFS_OPTIONS="
-			XFS_FS
-			XFS_POSIX_ACL
-		"
-	fi
+	BTRFS_OPTIONS="
+		BTRFS_FS
+		BTRFS_FS_POSIX_ACL
+	"
 
 	EXT4_OPTIONS="
 		EXT4_FS
 		EXT4_FS_POSIX_ACL
 	"
 
-	if [[ "${REALTIME}" == "PREEMPT_RT" ]] ; then
-		mapfile -s 1 -t BTRFS_STRINGS < <(printf "%s" "${BTRFS_OPTIONS}" | \
-			sed -e 's/\t//g' -e '$d')
+	F2FS_OPTIONS="
+		F2FS_FS
+		F2FS_FS_XATTR
+		F2FS_FS_POSIX_ACL
+	"
 
-		mapfile -s 1 -t F2FS_STRINGS < <(printf "%s" "${F2FS_OPTIONS}" | \
-			sed -e 's/\t//g' -e '$d')
+	XFS_OPTIONS="
+		XFS_FS
+		XFS_POSIX_ACL
+	"
 
-		mapfile -s 1 -t XFS_STRINGS < <(printf "%s" "${XFS_OPTIONS}" | \
-			sed -e 's/\t//g' -e '$d')
-	fi
+	mapfile -s 1 -t BTRFS_STRINGS < <(printf "%s" "${BTRFS_OPTIONS}" | \
+		sed -e 's/\t//g' -e '$d')
 
 	mapfile -s 1 -t EXT4_STRINGS < <(printf "%s" "${EXT4_OPTIONS}" | \
+		sed -e 's/\t//g' -e '$d')
+
+	mapfile -s 1 -t F2FS_STRINGS < <(printf "%s" "${F2FS_OPTIONS}" | \
+		sed -e 's/\t//g' -e '$d')
+
+	mapfile -s 1 -t XFS_STRINGS < <(printf "%s" "${XFS_OPTIONS}" | \
 		sed -e 's/\t//g' -e '$d')
 
 	# Throw all errors first before exiting
 	set +e
 
-	if [[ "${REALTIME}" == "PREEMPT_RT" ]] ; then
-		for (( i=0 ; i < "${#BTRFS_STRINGS[@]}" ; i++ )) ; do
-			if ! zgrep "CONFIG_${BTRFS_STRINGS[$i]}=m" \
-				"${KCONFIG}" >> /dev/null 2>&1 && \
-				! zgrep "CONFIG_${BTRFS_STRINGS[$i]}=y" \
-				"${KCONFIG}" >> /dev/null 2>&1
-			then
-				printf "\\n\\tError: %s is not set.\\n" \
-					"CONFIG_${BTRFS_STRINGS[$i]}"
-				BTRFS_ERROR_THROWN=1
-			else
-				BTRFS_ERROR_THROWN=0
-			fi
-		done
-
-		for (( i=0 ; i < "${#F2FS_STRINGS[@]}" ; i++ )) ; do
-			if ! zgrep "CONFIG_${F2FS_STRINGS[$i]}=m" \
-				"${KCONFIG}" >> /dev/null 2>&1 && \
-				! zgrep "CONFIG_${F2FS_STRINGS[$i]}=y" \
-				"${KCONFIG}" >> /dev/null 2>&1
-			then
-				printf "\\n\\tError: %s is not set.\\n" \
-					"CONFIG_${F2FS_STRINGS[$i]}"
-				F2FS_ERROR_THROWN=1
-			else
-				F2FS_ERROR_THROWN=0
-			fi
-		done
-
-		for (( i=0 ; i < "${#XFS_STRINGS[@]}" ; i++ )) ; do
-			if ! zgrep "CONFIG_${XFS_STRINGS[$i]}=m" \
-				"${KCONFIG}" >> /dev/null 2>&1 && \
-				! zgrep "CONFIG_${XFS_STRINGS[$i]}=y" \
-				"${KCONFIG}" >> /dev/null 2>&1
-			then
-				printf "\\n\\tError: %s is not set.\\n" \
-					"CONFIG_${XFS_STRINGS[$i]}"
-				XFS_ERROR_THROWN=1
-			else
-				XFS_ERROR_THROWN=0
-			fi
-		done
-	fi
+	for (( i=0 ; i < "${#BTRFS_STRINGS[@]}" ; i++ )) ; do
+		if ! zgrep "CONFIG_${BTRFS_STRINGS[$i]}=m" \
+			"${KCONFIG}" >> /dev/null 2>&1 && \
+			! zgrep "CONFIG_${BTRFS_STRINGS[$i]}=y" \
+			"${KCONFIG}" >> /dev/null 2>&1
+		then
+			printf "\\n\\tError: %s is not set.\\n" \
+				"CONFIG_${BTRFS_STRINGS[$i]}"
+			BTRFS_ERROR_THROWN=1
+		else
+			BTRFS_ERROR_THROWN=0
+		fi
+	done
 
 	for (( i=0 ; i < "${#EXT4_STRINGS[@]}" ; i++ )) ; do
 		if ! zgrep "CONFIG_${EXT4_STRINGS[$i]}=m" \
@@ -272,23 +209,45 @@ linux_config_check()
 		fi
 	done
 
+	for (( i=0 ; i < "${#F2FS_STRINGS[@]}" ; i++ )) ; do
+		if ! zgrep "CONFIG_${F2FS_STRINGS[$i]}=m" \
+			"${KCONFIG}" >> /dev/null 2>&1 && \
+			! zgrep "CONFIG_${F2FS_STRINGS[$i]}=y" \
+			"${KCONFIG}" >> /dev/null 2>&1
+		then
+			printf "\\n\\tError: %s is not set.\\n" \
+				"CONFIG_${F2FS_STRINGS[$i]}"
+			F2FS_ERROR_THROWN=1
+		else
+			F2FS_ERROR_THROWN=0
+		fi
+	done
+
+	for (( i=0 ; i < "${#XFS_STRINGS[@]}" ; i++ )) ; do
+		if ! zgrep "CONFIG_${XFS_STRINGS[$i]}=m" \
+			"${KCONFIG}" >> /dev/null 2>&1 && \
+			! zgrep "CONFIG_${XFS_STRINGS[$i]}=y" \
+			"${KCONFIG}" >> /dev/null 2>&1
+		then
+			printf "\\n\\tError: %s is not set.\\n" \
+				"CONFIG_${XFS_STRINGS[$i]}"
+			XFS_ERROR_THROWN=1
+		else
+			XFS_ERROR_THROWN=0
+		fi
+	done
+
 	set -e
 
-	if [[ "${EXT4_ERROR_THROWN}" -eq 1 ]] ; then
-		printf "\\n\\tError: EXT4 support is disabled. Exiting...\\n\\n"
+	if [[ "${BTRFS_ERROR_THROWN}" -eq 1 || \
+		"${EXT4_ERROR_THROWN}" -eq 1 || \
+		"${F2FS_ERROR_THROWN}" -eq 1 || \
+		"${XFS_ERROR_THROWN}" -eq 1 ]]
+	then
+		printf "\\n\\tErrors detected. Exiting...\\n\\n"
 		exit 1
-	fi
-
-	if [[ "${REALTIME}" == "PREEMPT_RT" ]] ; then
-		if [[ "${BTRFS_ERROR_THROWN}" -eq 1 || \
-			"${F2FS_ERROR_THROWN}" -eq 1 || \
-			"${XFS_ERROR_THROWN}" -eq 1 ]]
-		then
-			printf "\\n\\tErrors detected. Exiting...\\n\\n"
-			exit 1
-		else
-			printf "\\tAll filesystems enabled.\\n\\n"
-		fi
+	else
+		printf "\\tAll filesystems enabled.\\n\\n"
 	fi
 }
 
@@ -351,43 +310,36 @@ check_deps()
 {
 	printf "\\n\\tChecking dependencies...\\n\\n"
 
-	# This is necessary to ensure we don't create a BTRFS, F2FS or XFS
-	# filesystem with an ancient kernel, but also that the kernel is not
-	# newer than that used to mount the F2FS filesystem (the PREEMPT_RT kernel)
-	# https://bugzilla.opensuse.org/show_bug.cgi?id=1109665#c0
-	if [[ "${REALTIME}" == "PREEMPT_RT" ]] ; then
-		linux_ver
-	fi
+	# This is necessary to ensure we don't create a filesystem
+	# with an ancient kernel
+	linux_ver
 
 	# Make sure the running kernel supports BTRFS, EXT4, F2FS and XFS
-	# (only check for EXT4 if using RTAI)
 	linux_config_check
 
-	if [[ "${REALTIME}" == "PREEMPT_RT" ]] ; then
-		type mkfs.f2fs >> /dev/null 2>&1 || \
-		{
-			printf "\\n\\tError: f2fs-tools not installed.\\n" ;
-			exit 1 ;
-		} ; printf "\\tChecking version of f2fs-tools...\\n" ; f2fs_ver
-
-		type mkfs.xfs >> /dev/null 2>&1 || \
-		{
-			printf "\\n\\tError: xfsprogs not installed.\\n" ;
-			exit 1 ;
-		} ; printf "\\tChecking version of xfsprogs...\\n" ; xfs_ver
-
-		type mkfs.btrfs >> /dev/null 2>&1 || \
-		{
-			printf "\\n\\tError: btrfs-progs not installed.\\n" ;
-			exit 1 ;
-		} ; printf "\\tChecking version of btrfs-progs...\\n" ; btrfs_ver
-	fi
+	type mkfs.btrfs >> /dev/null 2>&1 || \
+	{
+		printf "\\n\\tError: btrfs-progs not installed.\\n" ;
+		exit 1 ;
+	} ; printf "\\tChecking version of btrfs-progs...\\n" ; btrfs_ver
 
 	type mkfs.ext4 >> /dev/null 2>&1 || \
 	{
 		printf "\\n\\tError: e2fsprogs not installed.\\n" ;
 		exit 1 ;
 	}
+
+	type mkfs.f2fs >> /dev/null 2>&1 || \
+	{
+		printf "\\n\\tError: f2fs-tools not installed.\\n" ;
+		exit 1 ;
+	} ; printf "\\tChecking version of f2fs-tools...\\n" ; f2fs_ver
+
+	type mkfs.xfs >> /dev/null 2>&1 || \
+	{
+		printf "\\n\\tError: xfsprogs not installed.\\n" ;
+		exit 1 ;
+	} ; printf "\\tChecking version of xfsprogs...\\n" ; xfs_ver
 
 	type mkfs.fat >> /dev/null 2>&1 || \
 	{
@@ -486,8 +438,7 @@ legacy_or_uefi()
 		else
 			printf "\\n\\tError: UEFI Runtime Services not supported.\\n
 \\tIf you are using a PREEMPT_RT kernel, you will need to pass:\\n\\tefi=runtime
-\\ton the kernel command line.\\n
-\\tYou must also not be booted into an RTAI kernel.\\n"
+\\ton the kernel command line.\\n"
 			exit 1
 		fi
 	elif [[ -z "${INSTALL_TYPE_ARG}" ]] ; then
@@ -1552,17 +1503,13 @@ cleanup()
 
 verify_psabi
 
-rtai_or_preempt_rt
-
 check_deps
 
 legacy_or_uefi
 
 check_drive
 
-if [[ "${REALTIME}" == "PREEMPT_RT" ]] ; then
-	choose_filesystem
-fi
+choose_filesystem
 
 partition_sizes
 
