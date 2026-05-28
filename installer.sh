@@ -735,7 +735,7 @@ partition_sizes()
 
 	printf "\\n\\tPlease specify the size for the root partition ( / )
 \\tin gigabytes (GB.)\\n
-\\tValue must be between 16 and 16000 (16 = 12GB, 16000 = 16TB)
+\\tValue must be between 16 and 16000 (16 = 16GB, 16000 = 16TB)
 \\tValue must be an exact integer.
 \\tDo not specify a unit (i.e. m/M/MB g/G/GB t/T/TB)\\n\\n"
 
@@ -1254,21 +1254,42 @@ mount_final_filesystems()
 {
 	printf "\\n\\tMounting final filesystems for GRUB installation...\\n"
 
-	if [[ "${INSTALL_TYPE}" == "LEGACY" ]] ; then
-		mount --bind "/dev" "${ROOT_MOUNT}/dev" || \
+	mount --bind "/dev" "${ROOT_MOUNT}/dev" || \
+	{
+		printf "\\n\\tError: Failed to mount: %s to: %s\\n" \
+			"/dev" "${ROOT_MOUNT}/dev" ;
+		exit 1 ;
+	}
+
+	mount --bind "/dev/pts" "${ROOT_MOUNT}/dev/pts" || \
+	{
+		printf "\\n\\tError: Failed to mount: %s to: %s\\n" \
+			"/dev/pts" "${ROOT_MOUNT}/dev/pts" ;
+		exit 1 ;
+	}
+
+	mount --bind "/dev/shm" "${ROOT_MOUNT}/dev/shm" || \
+	{
+		printf "\\n\\tError: Failed to mount: %s to: %s\\n" \
+			"/dev/shm" "${ROOT_MOUNT}/dev/shm" ;
+		exit 1 ;
+	}
+
+	mount --bind "/sys" "${ROOT_MOUNT}/sys" || \
+	{
+		printf "\\n\\tError: Failed to mount: %s to: %s\\n" \
+			"/sys" "${ROOT_MOUNT}/sys" ;
+		exit 1 ;
+	}
+
+	if [[ "${INSTALL_TYPE}" == "UEFI" ]] ; then
+		mount --rbind "/sys/firmware/efi/efivars" "${ROOT_MOUNT}/sys/firmware/efi/efivars" || \
 		{
 			printf "\\n\\tError: Failed to mount: %s to: %s\\n" \
-				"/dev" "${ROOT_MOUNT}/dev" ;
+				"/sys/firmware/efi/efivars" "${ROOT_MOUNT}/sys/firmware/efi/efivars" ;
 			exit 1 ;
 		}
 
-		mount --bind "/sys" "${ROOT_MOUNT}/sys" || \
-		{
-			printf "\\n\\tError: Failed to mount: %s to: %s\\n" \
-				"/sys" "${ROOT_MOUNT}/sys" ;
-			exit 1 ;
-		}
-	elif [[ "${INSTALL_TYPE}" == "UEFI" ]] ; then
 		mkdir -p "${ROOT_MOUNT}/efi" || \
 		{
 			printf "\\n\\tError: Failed to create: %s\\n" \
@@ -1280,20 +1301,6 @@ mount_final_filesystems()
 		{
 			printf "\\n\\tError: Failed to mount: %s to: %s\\n" \
 				"${EFI_PART}" "${ROOT_MOUNT}/efi" ;
-			exit 1 ;
-		}
-
-		mount --rbind "/dev" "${ROOT_MOUNT}/dev" || \
-		{
-			printf "\\n\\tError: Failed to mount: %s to: %s\\n" \
-				"/dev" "${ROOT_MOUNT}/dev" ;
-			exit 1 ;
-		}
-
-		mount --rbind "/sys" "${ROOT_MOUNT}/sys" || \
-		{
-			printf "\\n\\tError: Failed to mount: %s to: %s\\n" \
-				"/sys" "${ROOT_MOUNT}/sys" ;
 			exit 1 ;
 		}
 	fi
@@ -1485,10 +1492,17 @@ unmount_all()
 		}
 	fi
 
-	umount -l "${ROOT_MOUNT}/dev"
-	umount -l "${ROOT_MOUNT}/sys"
-	umount -l "${ROOT_MOUNT}/proc"
-	umount -l "${ROOT_MOUNT}/run"
+	umount "${ROOT_MOUNT}/dev/pts"
+	umount "${ROOT_MOUNT}/dev/shm"
+	umount "${ROOT_MOUNT}/dev"
+
+	if [[ "${INSTALL_TYPE}" == "UEFI" ]] ; then
+		umount "${ROOT_MOUNT}/sys/firmware/efi/efivars"
+	fi
+
+	umount "${ROOT_MOUNT}/sys"
+	umount "${ROOT_MOUNT}/proc"
+	umount "${ROOT_MOUNT}/run"
 
 	umount "${BOOT_PART}" || \
 	{
@@ -1575,6 +1589,8 @@ unmount_all
 
 cleanup
 
-printf "\\n\\tInstallation complete! You may now reboot.\\n"
+printf "\\n\\tInstallation complete! You may now reboot.\\n
+\\tThe password for both \`lcnc\` and \`root\` is:
+\\tgentoo-cnc123\\n"
 
 exit 0
