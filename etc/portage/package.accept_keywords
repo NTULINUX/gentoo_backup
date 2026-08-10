@@ -1,5 +1,0 @@
-# Accept/Restrict keywords
-
-dev-util/spirv-llvm-translator -~amd64
-llvm-core/* -~amd64
-llvm-runtimes/* -~amd64

@@ -19,11 +19,35 @@ ROOT_MOUNT="/mnt/gentoo-cnc"
 HOME_USER="lcnc"
 HOME_MOUNT_SUBDIR="${ROOT_MOUNT}/home/${HOME_USER}"
 
-STAGE4_TAG="v0.4-alpha"
-STAGE4_NAME="stage4-preempt_rt-lcnc-x86_64-v3"
-STAGE4_SRCURI_PART01="https://github.com/NTULINUX/gentoo_backup/releases/download/${STAGE4_TAG}/${STAGE4_NAME}.tar.xz.part01"
-STAGE4_SRCURI_PART02="https://github.com/NTULINUX/gentoo_backup/releases/download/${STAGE4_TAG}/${STAGE4_NAME}.tar.xz.part02"
-STAGE4_CHECKSUM="https://github.com/NTULINUX/gentoo_backup/releases/download/${STAGE4_TAG}/${STAGE4_NAME}.b2sum"
+GITHUB_DOWNLOADS="https://github.com/NTULINUX/gentoo_backup/releases/download"
+STAGE4_TAG="v0.5-alpha"
+STAGE4_NAME="gentoo-lcnc-${STAGE4_TAG}"
+STAGE4_SRCURI_PART01="${GITHUB_DOWNLOADS}/${STAGE4_TAG}/${STAGE4_NAME}.tar.xz.part01"
+STAGE4_SRCURI_PART02="${GITHUB_DOWNLOADS}/${STAGE4_TAG}/${STAGE4_NAME}.tar.xz.part02"
+STAGE4_CHECKSUM="${GITHUB_DOWNLOADS}/${STAGE4_TAG}/${STAGE4_NAME}.b2sum"
+
+sanity_checks()
+{
+	printf "\\n\\tEnsuring directory: %s is unmounted...\\n" "${ROOT_MOUNT}"
+
+	if ! grep -e "${ROOT_MOUNT}" "/proc/mounts" >> /dev/null 2>&1 && \
+		! mount | grep "${ROOT_MOUNT}" >> /dev/null 2>&1
+	then
+		printf "\\tNo mount points found on: %s\\n" "${ROOT_MOUNT}"
+	else
+		printf "\\n\\tError: %s is mounted.\\n" "${ROOT_MOUNT}"
+		exit 1
+	fi
+
+	printf "\\tEnsuring directory: %s does not exist...\\n" "${ROOT_MOUNT}"
+
+	if [[ ! -e "${ROOT_MOUNT}" ]] ; then
+		printf "\\tGood.\\n"
+	else
+		printf "\\n\\tError: Found: %s\\n" "${ROOT_MOUNT}"
+		exit 1
+	fi
+}
 
 verbose_prompt()
 {
@@ -40,8 +64,6 @@ verbose_prompt()
 		"${VERBOSE_ARG}" == "NO" || \
 		"${VERBOSE_ARG}" == "n" || \
 		"${VERBOSE_ARG}" == "no" || \
-		"${VERBOSE_ARG}" == "DEFAULT" || \
-		"${VERBOSE_ARG}" == "default" || \
 		-z "${VERBOSE_ARG}" ]]
 	then
 		VERBOSE_INSTALL="FALSE"
@@ -256,19 +278,16 @@ btrfs_ver()
 {
 	BTRFS_MAJOR_VER=$(mkfs.btrfs -V | grep -o "[0-9]" | sed -n '1p')
 	BTRFS_MINOR_VER=$(mkfs.btrfs -V | grep -o "[0-9]" | sed -n '2p')
-	BTRFS_PATCH_VER=$(mkfs.btrfs -V | grep -o "[0-9]" | sed -n '3p')
 
 	if [[ "${BTRFS_MAJOR_VER}" -lt 5 || \
 		"${BTRFS_MAJOR_VER}" -eq 5 && \
-		"${BTRFS_MINOR_VER}" -lt 15 || \
-		"${BTRFS_MINOR_VER}" -eq 15 && \
-		"${BTRFS_PATCH_VER}" -lt 1 ]]
+		"${BTRFS_MINOR_VER}" -lt 15 ]]
 	then
-		printf "\\n\\tError: btfrs-progs must be 5.15.1 or newer.\\n"
+		printf "\\n\\tError: btrfs-progs must be 5.15 or newer.\\n"
 		exit 1
 	else
 		printf "\\tbtrfs-progs version: %s\\n" \
-			"${BTRFS_MAJOR_VER}.${BTRFS_MINOR_VER}.${BTRFS_PATCH_VER}"
+			"${BTRFS_MAJOR_VER}.${BTRFS_MINOR_VER}"
 	fi
 }
 
@@ -401,7 +420,7 @@ legacy_or_uefi()
 \\033[0;33m
 \\tIMPORTANT:
 \\tFor NVMe installation media, UEFI _MUST_ be selected!
-\\tFor USB devices, UEFI is recommended and may not boot otheriwse.
+\\tFor USB devices, UEFI is recommended and may not boot otherwise.
 \\033[0m\\n"
 
 	read -r "INSTALL_TYPE_ARG"
@@ -533,7 +552,8 @@ check_drive()
 	then
 		printf "\\tBlock device: %s is valid.\\n" "${ENTIRE_DRIVE}"
 	else
-		printf "\\n\\tError: Invalid block device: %s\\n" "${ENTIRE_DRIVE}"
+		printf "\\n\\tError: Invalid block device: %s\\n" \
+			"${ENTIRE_DRIVE}"
 		exit 1
 	fi
 
@@ -553,7 +573,8 @@ check_drive()
 				"${ENTIRE_DRIVE}"
 			exit 1
 		else
-			printf "\\tAttempting to unmount partitions on: %s\\n" "${ENTIRE_DRIVE}"
+			printf "\\tAttempting to unmount partitions on: %s\\n" \
+				"${ENTIRE_DRIVE}"
 
 			mapfile -t PARTITIONS < <(lsblk -n -o MOUNTPOINTS "${ENTIRE_DRIVE}" | sed '/^$/d')
 
@@ -585,8 +606,6 @@ check_drive()
 			"${REMOVABLE_ARG}" == "NO" || \
 			"${REMOVABLE_ARG}" == "n" || \
 			"${REMOVABLE_ARG}" == "no" || \
-			"${REMOVABLE_ARG}" == "DEFAULT" || \
-			"${REMOVABLE_ARG}" == "default" || \
 			-z "${REMOVABLE_ARG}" ]]
 		then
 			REMOVABLE="FALSE"
@@ -621,20 +640,12 @@ choose_filesystem()
 		FSTYPE="BTRFS"
 	elif [[ "${FSTYPE_ARG}" == "EXT4" || \
 		"${FSTYPE_ARG}" == "ext4" || \
-		"${FSTYPE_ARG}" == "DEFAULT" && \
-		"${ENTIRE_DRIVE}" != "/dev/nvme"* || \
-		"${FSTYPE_ARG}" == "default" && \
-		"${ENTIRE_DRIVE}" != "/dev/nvme"* || \
 		"${ENTIRE_DRIVE}" != "/dev/nvme"* && \
 		-z "${FSTYPE_ARG}" ]]
 	then
 		FSTYPE="EXT4"
 	elif [[ "${FSTYPE_ARG}" == "F2FS" || \
 		"${FSTYPE_ARG}" == "f2fs" || \
-		"${FSTYPE_ARG}" == "DEFAULT" && \
-		"${ENTIRE_DRIVE}" == "/dev/nvme"* || \
-		"${FSTYPE_ARG}" == "default" && \
-		"${ENTIRE_DRIVE}" == "/dev/nvme"* || \
 		"${ENTIRE_DRIVE}" == "/dev/nvme"* && \
 		-z "${FSTYPE_ARG}" ]]
 	then
@@ -706,6 +717,37 @@ partition_sizes()
 	fi
 }
 
+initrd_type()
+{
+	printf "\\n\\tWould you like a generic or targeted initramfs?\\n
+\\tIf you choose generic, the image will be able to boot on most systems
+\\tother than this one, making it more portable. If you choose targeted,
+\\tthe system will consume less resources and boot faster, but may
+\\tnot boot on other systems.\\n
+\\tValid options (Enter for default):
+\\t\\tGENERIC/generic
+\\t\\tTARGETED/targeted (default)\\n\\n"
+
+	read -r "INITRD_TYPE_ARG"
+
+	if [[ "${INITRD_TYPE_ARG}" == "GENERIC" || \
+		"${INITRD_TYPE_ARG}" == "generic" ]]
+	then
+		INITRD_TYPE="GENERIC"
+		printf "\\n\\tWill use generic initramfs for final installation.\\n"
+	elif [[ "${INITRD_TYPE_ARG}" == "TARGETED" || \
+		"${INITRD_TYPE_ARG}" == "targeted" || \
+		-z "${INITRD_TYPE_ARG}" ]]
+	then
+		INITRD_TYPE="TARGETED"
+		printf "\\n\\tWill use targeted initramfs for final installation.\\n"
+	else
+		printf "\\n\\tError: Invalid selection: %s\\n" \
+			"${INITRD_TYPE_ARG}"
+		exit 1
+	fi
+}
+
 wipe_drive()
 {
 	printf "\\n\\tTarget installation media to erase: %s\\n
@@ -735,7 +777,7 @@ wipe_drive()
 
 	sleep 5 && sync
 
-	printf "\\tDone.\\n"
+	printf "\\n\\tDone.\\n"
 }
 
 partition_drive()
@@ -756,7 +798,8 @@ partition_drive()
 	if [[ "${INSTALL_TYPE}" == "LEGACY" ]] ; then
 		printf "\\tBIOS boot partition: %s\\n" "${BIOS_PART_SIZE}"
 	elif [[ "${INSTALL_TYPE}" == "UEFI" ]] ; then
-		printf "\\tEFI system partition ( /efi ): %s ( %s )\\n" "${EFI_PART_SIZE}" "FAT32"
+		printf "\\tEFI system partition ( /efi ): %s ( %s )\\n" \
+			"${EFI_PART_SIZE}" "FAT32"
 	fi
 
 	printf "\\tLinux extended boot partition ( /boot ): %s ( %s )
@@ -957,7 +1000,7 @@ format_partitions()
 		}
 	fi
 
-	printf "\\tDone.\\n"
+	printf "\\n\\tDone.\\n"
 }
 
 mount_init_filesystems()
@@ -968,26 +1011,6 @@ mount_init_filesystems()
 	fi
 
 	printf "\\n\\tPreparing for installation...\\n"
-
-	printf "\\tEnsuring directory: %s does not exist...\\n" "${ROOT_MOUNT}"
-
-	if [[ ! -d "${ROOT_MOUNT}" ]] ; then
-		printf "\\tGood.\\n"
-	else
-		printf "\\n\\tError: Found: %s\\n" "${ROOT_MOUNT}"
-		exit 1
-	fi
-
-	printf "\\tEnsuring directory: %s is unmounted...\\n" "${ROOT_MOUNT}"
-
-	if ! grep -e "${ROOT_MOUNT}" "/proc/mounts" >> /dev/null 2>&1 && \
-		! mount | grep "${ROOT_MOUNT}" >> /dev/null 2>&1
-	then
-		printf "\\tNo mount points found on: %s\\n" "${ROOT_MOUNT}"
-	else
-		printf "\\n\\tError: %s is mounted.\\n" "${ROOT_MOUNT}"
-		exit 1
-	fi
 
 	# Some distros are OCD about mounting everything ASAP because ADHD
 	printf "\\tEnsuring target media is still unmounted...\\n"
@@ -1039,7 +1062,7 @@ mount_init_filesystems()
 		mount "${BOOT_PART}" -o "${F2FS_MOUNT_OPTS}" "${ROOT_MOUNT}/boot" || \
 		{
 			printf "\\n\\tError: Failed to mount: %s to: %s\\n" \
-				"${ROOT_PART}" "${ROOT_MOUNT}/boot" ;
+				"${BOOT_PART}" "${ROOT_MOUNT}/boot" ;
 			exit 1 ;
 		}
 	else
@@ -1114,14 +1137,68 @@ fetch_stage4()
 	printf "\\n\\tDone.\\n"
 }
 
+find_or_fetch()
+{
+	printf "\\n\\tSpecify local directory containing stage4 tarballs
+\\tor leave empty and press Enter to download:\\n\\n"
+
+	read -r "LOCAL_STAGE4_DIR" ; printf "\\n"
+
+	if [[ -n "${LOCAL_STAGE4_DIR}" ]] ; then
+		if [[ -r "${LOCAL_STAGE4_DIR}/${STAGE4_NAME}.tar.xz.part01" && \
+			-r "${LOCAL_STAGE4_DIR}/${STAGE4_NAME}.tar.xz.part02" && \
+			-r "${LOCAL_STAGE4_DIR}/${STAGE4_NAME}.b2sum" ]]
+		then
+			printf "\\tLocal files found, copying files to: %s\\n" "${ROOT_MOUNT}"
+
+			if_log cp -arv "${LOCAL_STAGE4_DIR}/${STAGE4_NAME}.tar.xz.part01" \
+				"${ROOT_MOUNT}/" || \
+			{
+				printf "\\n\\tError: Failed to copy stage4 (1/2) tarball.\\n" ;
+				exit 1 ;
+			}
+
+			if_log cp -arv "${LOCAL_STAGE4_DIR}/${STAGE4_NAME}.tar.xz.part02" \
+				"${ROOT_MOUNT}/" || \
+			{
+				printf "\\n\\tError: Failed to copy stage4 (2/2) tarball.\\n" ;
+				exit 1 ;
+			}
+
+			if_log cp -arv "${LOCAL_STAGE4_DIR}/${STAGE4_NAME}.b2sum" \
+				"${ROOT_MOUNT}/" || \
+			{
+				printf "\\n\\tError: Failed to copy stage4 checksum.\\n" ;
+				exit 1 ;
+			}
+
+			printf "\\n\\tDone.\\n"
+		else
+			printf "\\n\\tError: One or more files not found:\\n\\t%s\\n\\t%s\\n\\t%s\\n" \
+				"${LOCAL_STAGE4_DIR}/${STAGE4_NAME}.tar.xz.part01" \
+				"${LOCAL_STAGE4_DIR}/${STAGE4_NAME}.tar.xz.part02" \
+				"${LOCAL_STAGE4_DIR}/${STAGE4_NAME}.b2sum"
+			exit 1
+		fi
+	else
+		fetch_stage4
+	fi
+}
+
 verify_stage4()
 {
 	printf "\\n\\tVerifying integrity of stage4 tarballs...\\n"
 
 	if [[ -r "${ROOT_MOUNT}/${STAGE4_NAME}.b2sum" ]] ; then
+		cd "${ROOT_MOUNT}" || \
+		{
+			printf "Error: Failed to change directory to: %s\\n" "${ROOT_MOUNT}" ;
+			exit 1 ;
+		}
+
 		b2sum -c "${ROOT_MOUNT}/${STAGE4_NAME}.b2sum" || \
 		{
-			printf "\\n\\tError: Failed to verify checksum on stage4 tarballs.\\n." ;
+			printf "\\n\\tError: Failed to verify checksum on stage4 tarballs.\\n" ;
 			exit 1 ;
 		}
 	else
@@ -1173,19 +1250,19 @@ display_keepalive()
 Exec=xset s 0
 Name=xset timeout
 Type=Application
-Version=1.0\\n" &> "${HOME_MOUNT_SUBDIR}/.config/autostart/xset timeout.desktop"
+Version=1.0\\n" &> "${HOME_MOUNT_SUBDIR}/.config/autostart/xset_timeout.desktop"
 
 	printf "[Desktop Entry]
 Exec=xset s noblank
 Name=xset noblank
 Type=Application
-Version=1.0\\n" &> "${HOME_MOUNT_SUBDIR}/.config/autostart/xset noblank.desktop"
+Version=1.0\\n" &> "${HOME_MOUNT_SUBDIR}/.config/autostart/xset_noblank.desktop"
 
 	printf "[Desktop Entry]
 Exec=xset -dpms
 Name=xset dpms
 Type=Application
-Version=1.0\\n" &> "${HOME_MOUNT_SUBDIR}/.config/autostart/xset dpms.desktop"
+Version=1.0\\n" &> "${HOME_MOUNT_SUBDIR}/.config/autostart/xset_dpms.desktop"
 
 	printf "\\tFixing permissions on autostart files...\\n"
 
@@ -1378,6 +1455,31 @@ PARTUUID=${ROOT_PARTUUID}\\t/\\t\\txfs\\tdefaults\\t0\\t1" \
 	fi
 }
 
+generate_initrd()
+{
+	printf "\\n\\tGenerating initramfs via dracut...\\n"
+
+	if [[ "${INITRD_TYPE}" == "GENERIC" ]] ; then
+		chroot "${ROOT_MOUNT}" /bin/bash <<-EOF
+			dracut --lz4 --no-hostonly --fstab || \
+			{
+				printf "\\n\\tError: Failed to create generic initrd.\\n" ;
+				exit 1 ;
+			}
+		EOF
+	elif [[ "${INITRD_TYPE}" == "TARGETED" ]] ; then
+		chroot "${ROOT_MOUNT}" /bin/bash <<-EOF
+			dracut --lz4 --hostonly --fstab || \
+			{
+				printf "\\n\\tError: Failed to create targeted initrd.\\n" ;
+				exit 1 ;
+			}
+		EOF
+	fi
+
+	printf "\\n\\tDone.\\n"
+}
+
 install_grub()
 {
 	printf "\\n\\tInstalling GRUB...\\n"
@@ -1469,7 +1571,15 @@ unmount_all()
 		exit 1 ;
 	}
 
+	printf "\\n\\tDone.\\n"
+}
+
+cleanup()
+{
+	printf "\\n\\tCleaning up...\\n"
+
 	printf "\\tRemoving stage4 files from final installation...\\n"
+
 	rm -f "${ROOT_MOUNT}/${STAGE4_NAME}."*
 
 	sleep 5 && sync
@@ -1484,13 +1594,6 @@ unmount_all()
 		exit 1 ;
 	}
 
-	printf "\\n\\tDone.\\n"
-}
-
-cleanup()
-{
-	printf "\\n\\tCleaning up...\\n"
-
 	rm -d "${ROOT_MOUNT}" || \
 	{
 		printf "\\n\\tError: Failed to remove non-empty directory: %s\\n" \
@@ -1500,6 +1603,8 @@ cleanup()
 
 	printf "\\n\\tDone.\\n"
 }
+
+sanity_checks
 
 verify_psabi
 
@@ -1513,6 +1618,8 @@ choose_filesystem
 
 partition_sizes
 
+initrd_type
+
 wipe_drive
 
 partition_drive
@@ -1521,7 +1628,7 @@ format_partitions
 
 mount_init_filesystems
 
-fetch_stage4
+find_or_fetch
 
 verify_stage4
 
@@ -1532,6 +1639,8 @@ display_keepalive
 mount_final_filesystems
 
 generate_fstab
+
+generate_initrd
 
 install_grub
 

@@ -12,6 +12,8 @@ gnome-base/gvfs fuse
 llvm-runtimes/libunwind static-libs
 media-libs/freetype utils
 media-video/pipewire extra
+net-wireless/blueman -network
+sys-devel/binutils -pgo
 sci-libs/hdf5 unsupported
 sci-libs/lapack deprecated
 sci-libs/vtk imaging tbb
