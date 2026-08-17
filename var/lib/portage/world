@@ -1,4 +1,5 @@
 app-arch/lzop
+app-editors/nano
 app-editors/vim
 app-misc/screen
 app-portage/gentoolkit
@@ -9,6 +10,7 @@ dev-util/rt-tests
 dev-vcs/git
 gnome-extra/nm-applet
 kde-apps/kate
+kde-apps/keditbookmarks
 kde-apps/konqueror
 kde-apps/okular
 lxqt-base/lxqt-meta
@@ -29,6 +31,7 @@ sci-electronics/mesaflash
 sci-libs/flexgui
 sci-misc/halviewer
 sys-apps/dmidecode
+sys-apps/memtest86+
 sys-apps/nvme-cli
 sys-apps/smartmontools
 sys-apps/usb_modeswitch

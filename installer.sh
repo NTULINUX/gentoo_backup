@@ -20,7 +20,7 @@ HOME_USER="lcnc"
 HOME_MOUNT_SUBDIR="${ROOT_MOUNT}/home/${HOME_USER}"
 
 GITHUB_DOWNLOADS="https://github.com/NTULINUX/gentoo_backup/releases/download"
-STAGE4_TAG="v0.5-alpha"
+STAGE4_TAG="v0.5.1-alpha"
 STAGE4_NAME="gentoo-lcnc-${STAGE4_TAG}"
 STAGE4_SRCURI_PART01="${GITHUB_DOWNLOADS}/${STAGE4_TAG}/${STAGE4_NAME}.tar.xz.part01"
 STAGE4_SRCURI_PART02="${GITHUB_DOWNLOADS}/${STAGE4_TAG}/${STAGE4_NAME}.tar.xz.part02"
@@ -1111,7 +1111,8 @@ fetch_stage4()
 
 	cd "${ROOT_MOUNT}" || \
 	{
-		printf "Error: Failed to change directory to: %s\\n" "${ROOT_MOUNT}" ;
+		printf "Error: Failed to change directory to: %s\\n" \
+			"${ROOT_MOUNT}" ;
 		exit 1 ;
 	}
 
@@ -1149,7 +1150,8 @@ find_or_fetch()
 			-r "${LOCAL_STAGE4_DIR}/${STAGE4_NAME}.tar.xz.part02" && \
 			-r "${LOCAL_STAGE4_DIR}/${STAGE4_NAME}.b2sum" ]]
 		then
-			printf "\\tLocal files found, copying files to: %s\\n" "${ROOT_MOUNT}"
+			printf "\\tLocal files found, copying files to: %s\\n" \
+				"${ROOT_MOUNT}"
 
 			if_log cp -arv "${LOCAL_STAGE4_DIR}/${STAGE4_NAME}.tar.xz.part01" \
 				"${ROOT_MOUNT}/" || \
@@ -1192,7 +1194,8 @@ verify_stage4()
 	if [[ -r "${ROOT_MOUNT}/${STAGE4_NAME}.b2sum" ]] ; then
 		cd "${ROOT_MOUNT}" || \
 		{
-			printf "Error: Failed to change directory to: %s\\n" "${ROOT_MOUNT}" ;
+			printf "Error: Failed to change directory to: %s\\n" \
+				"${ROOT_MOUNT}" ;
 			exit 1 ;
 		}
 
@@ -1216,15 +1219,17 @@ install_stage4()
 \\tThis may take awhile...\\n"
 
 	if [[ -r "${ROOT_MOUNT}/${STAGE4_NAME}.tar.xz.part01" && \
-		-r "${ROOT_MOUNT}/${STAGE4_NAME}.tar.xz.part02" ]] ; then
-			cat "${ROOT_MOUNT}/${STAGE4_NAME}.tar.xz.part01" \
-				"${ROOT_MOUNT}/${STAGE4_NAME}.tar.xz.part02" | \
-				tar -xpJf - --numeric-owner --xattrs-include='*.*' -C "${ROOT_MOUNT}/" || \
-				{
-					printf "\\n\\tError: Failed to decompress stage4 tarballs to: %s\\n" \
-						"${ROOT_MOUNT}/" ;
-					exit 1 ;
-				}
+		-r "${ROOT_MOUNT}/${STAGE4_NAME}.tar.xz.part02" ]]
+	then
+		cat "${ROOT_MOUNT}/${STAGE4_NAME}.tar.xz.part01" \
+			"${ROOT_MOUNT}/${STAGE4_NAME}.tar.xz.part02" | \
+			tar -xpJf - --numeric-owner --xattrs-include='*.*' \
+			-C "${ROOT_MOUNT}/" || \
+			{
+				printf "\\n\\tError: Failed to decompress stage4 tarballs to: %s\\n" \
+					"${ROOT_MOUNT}/" ;
+				exit 1 ;
+			}
 	else
 		printf "\\n\\tError: Unable to read stage4 tarballs."
 		exit 1
@@ -1311,10 +1316,12 @@ mount_final_filesystems()
 	}
 
 	if [[ "${INSTALL_TYPE}" == "UEFI" ]] ; then
-		mount --rbind "/sys/firmware/efi/efivars" "${ROOT_MOUNT}/sys/firmware/efi/efivars" || \
+		mount --rbind "/sys/firmware/efi/efivars" \
+			"${ROOT_MOUNT}/sys/firmware/efi/efivars" || \
 		{
 			printf "\\n\\tError: Failed to mount: %s to: %s\\n" \
-				"/sys/firmware/efi/efivars" "${ROOT_MOUNT}/sys/firmware/efi/efivars" ;
+				"/sys/firmware/efi/efivars" \
+				"${ROOT_MOUNT}/sys/firmware/efi/efivars" ;
 			exit 1 ;
 		}
 
