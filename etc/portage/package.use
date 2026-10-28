@@ -1,6 +1,7 @@
 # Package-specific USE flags
 
 app-text/xmlto text
+dev-cpp/simdutf atomic-base64
 dev-lang/rust dist
 dev-python/pyqt6 designer
 dev-python/pyside designer quick tools uitools
@@ -14,8 +15,6 @@ media-libs/freetype utils
 media-video/pipewire extra
 net-wireless/blueman -network
 sys-devel/binutils -pgo
-sci-libs/hdf5 unsupported
-sci-libs/lapack deprecated
 sci-libs/vtk imaging tbb
 sys-libs/zlib minizip
 x11-base/xwayland libei

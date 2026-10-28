@@ -5,7 +5,9 @@ app-misc/screen
 app-portage/gentoolkit
 app-portage/ufed
 app-text/evince
+app-text/tree
 dev-util/geany
+dev-util/github-cli
 dev-util/rt-tests
 dev-vcs/git
 gnome-extra/nm-applet
@@ -26,7 +28,7 @@ net-irc/hexchat
 net-misc/ntpd-rs
 net-print/gutenprint
 net-wireless/blueman
-sci-electronics/linuxcnc-flexgui
+sci-electronics/linuxcnc
 sci-electronics/mesaflash
 sci-libs/flexgui
 sci-misc/halviewer
